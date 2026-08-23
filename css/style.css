@@ -710,3 +710,66 @@ select { appearance: none; }
   .overlay-kicker { animation: none !important; }
   .intro-logo { animation: none !important; }
 }
+
+/* ============ Recorrência, dificuldade e histórico (3ª etapa) ============ */
+
+/* Grupos de escolha (frequência / destino das missões) — mesmo estilo das abas */
+.choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.choice-group.choice-column { flex-direction: column; }
+
+.choice-group label { position: relative; }
+
+.choice-group input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice-pill {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 18px;
+  text-align: center;
+  padding: 7px 10px;
+  background: var(--panel);
+  color: var(--dim);
+  border: 2px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.choice-group input:checked + .choice-pill {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: var(--panel-2);
+}
+
+.choice-group input:focus-visible + .choice-pill {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+
+.choice-group.choice-column .choice-pill { text-align: left; }
+
+/* Tags de dificuldade / frequência nos cartões de missão */
+.tag {
+  font-size: 15px;
+  color: var(--dim);
+  border: 1px solid var(--border);
+  padding: 0 5px;
+  white-space: nowrap;
+}
+
+.tag-easy   { color: var(--green); border-color: var(--green); }
+.tag-normal { color: var(--blue);  border-color: var(--blue); }
+.tag-hard   { color: var(--gold);  border-color: var(--gold); }
+.tag-epic   { color: var(--purple); border-color: var(--purple); }
+.tag-custom { color: var(--dim); }
+
+/* Status "completa hoje/esta semana/este mês" */
+.quest-status { color: var(--green); }

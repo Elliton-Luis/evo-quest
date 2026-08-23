@@ -1,9 +1,8 @@
 'use strict';
 
-/* =====================================================================
-   LifeQuest — bootstrap e ligação de eventos (delegação).
-   Fluxo: sem save → criação de personagem; com save → app completo.
-   ===================================================================== */
+/* Bootstrap e ligação de eventos (delegação global).
+   Fluxo: sem save → criação de personagem → boas-vindas (0 categorias);
+   com save → app completo. */
 
 const App = {
 
@@ -11,27 +10,25 @@ const App = {
     if (this._initialized) return; // protege contra disparos duplicados
     this._initialized = true;
 
-    this.bindGlobalEvents();
-    if (Game.load()) {
-      UI.showShell();
-      UI.navigate('home');
-      UI.flushAchievements(); // condições que passaram a valer com atualizações
-    } else {
-      UI.renderCreation();
-    }
-  },
-
-  /* ---------- eventos globais (delegação) ---------- */
-
-  bindGlobalEvents() {
     document.addEventListener('click', e => this.handleClick(e));
     document.addEventListener('submit', e => this.handleSubmit(e));
     document.addEventListener('change', e => this.handleChange(e));
-    // Tecla ESC fecha modal
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') UI.closeModal();
+      if (e.key === 'Escape') Modals.close();
     });
+
+    if (Game.load()) {
+      Screens.showShell();
+      // Save antigo sem nenhuma categoria? Convida a criar na tela de boas-vindas.
+      Screens.navigate(Game.state.categories.length === 0 && !Game.state.completions.length
+        ? 'welcome' : 'home');
+      this.flushAchievements();
+    } else {
+      Screens.navigate('creation');
+    }
   },
+
+  /* ---------- delegação de eventos ---------- */
 
   handleClick(e) {
     const btn = e.target.closest('[data-action]');
@@ -40,102 +37,80 @@ const App = {
 
     switch (action) {
       case 'nav':
-        UI.navigate(btn.dataset.screen);
+        Screens.navigate(btn.dataset.screen);
+        break;
+      case 'welcome-home':
+        Screens.navigate('home');
         break;
 
       /* missões */
       case 'new-quest':
-        UI.openQuestModal(null);
+        Modals.quest(null);
         break;
       case 'quest-toggle': {
-        const q = Game.state.quests.find(x => x.id === btn.dataset.id);
-        if (!q) break;
-        q.done ? this.reopenQuest(q.id) : this.completeQuest(q.id);
+        const q = Quests.get(btn.dataset.id);
+        if (q && Quests.isAvailable(q)) this.completeQuest(q.id);
         break;
       }
       case 'quest-complete':
         this.completeQuest(btn.dataset.id);
         break;
-      case 'quest-reopen':
-        this.reopenQuest(btn.dataset.id);
-        break;
       case 'quest-edit':
-        UI.openQuestModal(Game.state.quests.find(q => q.id === btn.dataset.id));
+        Modals.quest(Quests.get(btn.dataset.id));
         break;
       case 'quest-delete':
-        UI.confirmModal(
+        Modals.confirm(
           'EXCLUIR MISSÃO',
-          'Esta missão será removida para sempre. O XP já ganho é mantido.',
+          'Esta missão será removida para sempre. O XP já ganho e o histórico são mantidos.',
           'delete-quest:' + btn.dataset.id
         );
         break;
       case 'filter':
-        UI.questFilter = btn.dataset.filter;
-        UI.renderQuests();
+        Screens.questFilter = btn.dataset.filter;
+        Screens.quests();
         break;
 
       /* categorias */
       case 'cat-new':
-        UI.openCategoryModal(null);
+        Modals.category(null);
         break;
       case 'cat-edit':
-        UI.openCategoryModal(Game.getCategory(btn.dataset.id));
+        Modals.category(Categories.get(btn.dataset.id));
         break;
       case 'cat-delete': {
-        const cat = Game.getCategory(btn.dataset.id);
-        if (!cat) break;
-        const total = Game.state.quests.filter(q => q.categoryId === cat.id).length;
-        const msg = total > 0
-          ? `A categoria <b>${UI.esc(cat.icon + ' ' + cat.name)}</b> será removida junto com <b>${total} missão(ões)</b> vinculada(s). O XP já ganho é mantido.`
-          : `A categoria <b>${UI.esc(cat.icon + ' ' + cat.name)}</b> será removida. O XP já ganho é mantido.`;
-        UI.confirmModal('EXCLUIR CATEGORIA', msg, 'delete-cat:' + cat.id);
+        const cat = Categories.get(btn.dataset.id);
+        if (cat) Modals.deleteCategory(cat); // nunca apaga missões silenciosamente
         break;
       }
 
-      /* primeiro acesso */
-      case 'add-samples':
-        Game.addSampleQuests();
-        UI.navigate('home');
-        UI.flushAchievements();
-        break;
-      case 'go-home':
-        UI.navigate('home');
-        UI.flushAchievements();
-        break;
-
       /* modais / overlays */
       case 'modal-backdrop':
-        // fecha apenas se o clique foi no fundo escuro, não dentro do modal
-        if (e.target === btn) UI.closeModal();
+        if (e.target === btn) Modals.close();
         break;
       case 'modal-cancel':
-        UI.closeModal();
+        Modals.close();
         break;
       case 'confirm-ok': {
         const [kind, id] = btn.dataset.confirm.split(':');
-        UI.closeModal();
+        Modals.close();
         if (kind === 'delete-quest') {
-          Game.deleteQuest(id);
-          UI.toast('Missão excluída', true);
-          UI.navigate(UI.currentScreen);
-        } else if (kind === 'delete-cat') {
-          Game.deleteCategory(id);
-          UI.toast('Categoria excluída', true);
-          UI.navigate(UI.currentScreen);
-          UI.flushAchievements();
+          Quests.remove(id);
+          Notify.toast('Missão excluída', true);
+          Screens.refresh();
+          this.flushAchievements(); // arsenal/planejador contam cadastro
         } else if (kind === 'reset') {
           Game.reset();
-          UI.renderCreation();
+          Screens.navigate('creation');
         }
         break;
       }
       case 'overlay-close':
-        UI.closeOverlay();
+        Notify.closeOverlay();
         break;
 
       /* personagem */
       case 'reset-game':
-        UI.confirmModal(
+        Modals.confirm(
           'REINICIAR AVENTURA',
           'Todo o progresso será apagado permanentemente deste navegador.',
           'reset'
@@ -145,10 +120,24 @@ const App = {
   },
 
   handleChange(e) {
+    const t = e.target;
+
     // Classe "✨ Personalizado" revela o campo de texto
-    if (e.target.id === 'char-class') {
-      const custom = UI.el('#char-custom-field');
-      if (custom) custom.classList.toggle('hidden', e.target.value !== '__custom');
+    if (t.id === 'char-class') {
+      const field = Screens.el('#char-custom-field');
+      if (field) field.classList.toggle('hidden', t.value !== '__custom');
+    }
+
+    // Dificuldade preenche o XP automaticamente; o usuário pode alterar depois.
+    if (t.id === 'q-difficulty') {
+      const preset = DIFFICULTIES[t.value];
+      if (preset) Screens.el('#q-xp').value = preset.xp;
+    }
+
+    // Exclusão de categoria: mostrar select ao escolher reatribuir
+    if (t.name === 'del-mode') {
+      const field = Screens.el('#reassign-field');
+      if (field) field.classList.toggle('hidden', t.value !== 'reassign');
     }
   },
 
@@ -158,40 +147,17 @@ const App = {
     /* criação de personagem */
     if (form.id === 'char-form') {
       e.preventDefault();
-      const name = UI.el('#char-name').value.trim();
-      let klass = UI.el('#char-class').value;
+      const name = Screens.el('#char-name').value.trim();
+      let klass = Screens.el('#char-class').value;
       let isCustom = false;
       if (klass === '__custom') {
-        klass = UI.el('#char-custom').value.trim();
-        if (!klass) { UI.el('#char-custom').focus(); return; }
+        klass = Screens.el('#char-custom').value.trim();
+        if (!klass) { Screens.el('#char-custom').focus(); return; }
         isCustom = true;
       }
       if (!name) return;
       Game.createPlayer(name, klass, isCustom);
-      UI.renderAdventureStarted();
-      return;
-    }
-
-    /* criar/editar missão */
-    if (form.id === 'quest-form') {
-      e.preventDefault();
-      const id = form.dataset.id;
-      const data = {
-        name: UI.el('#q-name').value,
-        desc: UI.el('#q-desc').value,
-        categoryId: UI.el('#q-cat').value,
-        xp: UI.el('#q-xp').value,
-      };
-      let ok;
-      if (id) {
-        ok = !!Game.updateQuest(id, data);
-        UI.toast('Missão atualizada');
-      } else {
-        ok = !!Game.createQuest(data);
-        UI.toast('Missão criada');
-      }
-      UI.closeModal();
-      if (ok) UI.navigate(UI.currentScreen);
+      Screens.navigate('welcome'); // 0 categorias: convida a criar atributos
       return;
     }
 
@@ -200,25 +166,68 @@ const App = {
       e.preventDefault();
       const id = form.dataset.id;
       const data = {
-        icon: UI.el('#cat-icon').value,
-        name: UI.el('#cat-name').value,
-        desc: UI.el('#cat-desc').value,
+        icon: Screens.el('#cat-icon').value,
+        name: Screens.el('#cat-name').value,
+        description: Screens.el('#cat-desc').value,
       };
       if (id) {
-        Game.updateCategory(id, data);
-        UI.toast('Categoria atualizada');
+        Categories.update(id, data);
+        Notify.toast('Categoria atualizada');
       } else {
-        const cat = Game.createCategory(data.name, data.icon, data.desc);
+        const cat = Categories.create(data);
         if (!cat) return;
-        UI.toast(`Categoria ${cat.icon} criada!`);
+        Notify.toast(`Categoria ${cat.icon} criada!`);
       }
-      UI.closeModal();
-      UI.renderAttributes();
-      UI.flushAchievements();
+      Modals.close();
+      Screens.currentScreen === 'welcome'
+        ? Screens.welcome()   // mostra a lista crescendo na tela de boas-vindas
+        : Screens.refresh();
+      this.flushAchievements();
+      return;
+    }
+
+    /* excluir categoria (com destino das missões) */
+    if (form.id === 'del-cat-form') {
+      e.preventDefault();
+      const modeEl = form.querySelector('input[name="del-mode"]:checked');
+      const mode = modeEl ? modeEl.value : 'orphan';
+      const target = Screens.el('#del-target');
+      Categories.remove(form.dataset.id, { mode, targetId: target ? target.value : null });
+      Modals.close();
+      Notify.toast('Categoria excluída', true);
+      Screens.refresh();
+      this.flushAchievements();
+      return;
+    }
+
+    /* criar/editar missão */
+    if (form.id === 'quest-form') {
+      e.preventDefault();
+      const id = form.dataset.id;
+      const rec = form.querySelector('input[name="q-recurrence"]:checked');
+      const data = {
+        title: Screens.el('#q-title').value,
+        description: Screens.el('#q-desc').value,
+        categoryId: Screens.el('#q-cat').value || null,
+        difficulty: Screens.el('#q-difficulty').value,
+        xp: Screens.el('#q-xp').value,
+        recurrence: rec ? rec.value : 'once',
+      };
+      let ok;
+      if (id) {
+        ok = !!Quests.update(id, data);
+        Notify.toast('Missão atualizada');
+      } else {
+        ok = !!Quests.create(data);
+        Notify.toast('Missão criada');
+      }
+      Modals.close();
+      if (ok) Screens.refresh();
+      this.flushAchievements(); // primeira jornada / arsenal etc.
     }
   },
 
-  /* ---------- ações de missão com feedback em camadas ---------- */
+  /* ---------- conclusão de missão com feedback em camadas ---------- */
 
   completeQuest(id) {
     const cardEl = document.querySelector(
@@ -226,30 +235,41 @@ const App = {
        .quest-item [data-action="quest-complete"][data-id="${id}"]`
     )?.closest('.quest-item');
 
-    const prev = UI.captureStats();
+    const prev = Notify.captureStats();
     const ev = Game.completeQuest(id);
     if (!ev) return;
 
-    const animate = !UI.prefersReducedMotion();
+    const animate = !Notify.prefersReducedMotion();
 
-    // 1. Feedback imediato no cartão (✓, nome riscado, +XP flutuando)
-    if (animate && cardEl) UI.markQuestDone(cardEl, ev.gainedXp);
+    // 1. Feedback imediato no cartão
+    if (animate && cardEl) Notify.markQuestDone(cardEl, ev.gainedXp);
 
-    // 2. Atualiza barras/contadores animando do valor antigo para o novo
+    // 2. Barras/contadores animam do valor antigo para o novo
     const delay = animate && cardEl ? 750 : 0;
     setTimeout(() => {
-      UI.navigate(UI.currentScreen);
-      UI.animateBars(prev);
+      Screens.refresh();
+      Notify.animateBars(prev);
     }, delay);
 
     // 3. Overlays (level up / conquistas) depois da animação do cartão
-    UI.showCompleteEvents(ev, delay + (ev.categoryLevelUp || ev.playerLevelUp ? 500 : 0));
+    const overlayDelay = delay + (ev.categoryLevelUp || ev.playerLevelUp ? 500 : 0);
+    Notify.showCompleteEvents(ev, overlayDelay);
   },
 
-  reopenQuest(id) {
-    Game.reopenQuest(id);
-    UI.toast('Missão reaberta', true);
-    UI.navigate(UI.currentScreen);
+  /** Verifica conquistas pendentes e notifica em fila. */
+  flushAchievements() {
+    const newly = Achievements.check(Game.state);
+    if (!newly.length) return;
+    Game.save();
+    for (const def of newly) {
+      Notify.pushOverlay({
+        type: 'achieve',
+        kicker: '🏆 CONQUISTA DESBLOQUEADA!',
+        icon: def.icon,
+        title: Modals.esc(def.name),
+        sub: Modals.esc(def.desc),
+      });
+    }
   },
 };
 

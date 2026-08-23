@@ -1,4 +1,4 @@
-// Teste headless do núcleo do jogo (storage.js + game.js + asserções).
+// Testes headless do núcleo do LifeQuest (pós-refatoração v3).
 const fs = require('fs');
 const path = require('path');
 
@@ -10,155 +10,211 @@ global.localStorage = {
   removeItem: k => { delete store[k]; },
 };
 
-const dir = path.join(__dirname);
-const code =
-  fs.readFileSync(path.join(dir, 'js/storage.js'), 'utf8') + '\n' +
-  fs.readFileSync(path.join(dir, 'js/game.js'), 'utf8');
+const FILES = [
+  'js/storage.js', 'js/game/xp.js', 'js/game/categories.js',
+  'js/game/quests.js', 'js/game/achievements.js', 'js/state.js',
+];
+const code = FILES.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
-// Executa no escopo global (sem 'strict' isolado pelo eval)
 const run = new Function('localStorage', code +
-  '\n; return { Storage, Game, ACHIEVEMENT_DEFS, statsFromTotalXp };');
-const { Storage, Game, ACHIEVEMENT_DEFS, statsFromTotalXp } = run(global.localStorage);
+  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES };');
+const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES } =
+  run(global.localStorage);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
+const sleepless = () => new Date().toISOString();
+const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString(); };
+// meio da semana N semanas atrás (semana começa na segunda) — sempre semanas distintas
+const weeksAgo = n => {
+  const d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7 * n + 3);
+  return d.toISOString();
+};
+// dia 15 do mês N meses atrás — sempre meses distintos
+const monthsAgo = n => {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() - n, 15).toISOString();
+};
 
-// 1. Sem save inicial
+/* ---------- 1. Estado inicial: ZERO categorias ---------- */
 assert(Game.load() === null, 'nenhum save inicial');
+Game.createPlayer('Herói', 'Cavaleiro do Código', true);
+assert(Game.state.categories.length === 0, 'novo jogador começa com 0 categorias (sem padrões)');
+assert(Game.state.player.customClass === true, 'classe personalizada registrada');
+assert(Game.state.completions.length === 0 && Game.state.quests.length === 0, 'histórico e missões vazios');
 
-// 2. Criação de personagem com categorias padrão
-Game.createPlayer('Herói', '💻 Programador');
-assert(Game.state.categories.length === 4, '4 categorias padrão');
-assert(Game.state.player.level === 1 && Game.state.player.totalXp === 0, 'jogador Lv.1 / 0 XP');
+/* ---------- 2. Categorias ---------- */
+const prog = Categories.create({ name: 'Programação', icon: '💻', description: 'Código' });
+const leitura = Categories.create({ name: 'Leitura', icon: '📖' });
+assert(!!prog && !!leitura, 'categorias criadas pelo usuário');
+assert(prog.createdAt && leitura.createdAt, 'categoria possui createdAt');
+assert(Game.state.player.createdCategory === true, 'flag createdCategory ativada');
 
-const cat1 = Game.state.categories[0];
+Categories.update(prog.id, { name: 'Desenvolvimento', icon: '🛠️' });
+assert(Categories.get(prog.id).name === 'Desenvolvimento' && Categories.get(prog.id).description === 'Código',
+  'edição preserva descrição e id');
+assert(prog.xp === 0, 'edição não mexe no XP');
 
-// 3. Criar missões (10 × 30 XP = 300 XP)
-let last;
-for (let i = 0; i < 10; i++) {
-  last = Game.createQuest({ name: 'Missão ' + i, desc: '', categoryId: cat1.id, xp: 30 });
+/* ---------- 3. Dificuldades ---------- */
+assert(DIFFICULTIES.easy.xp === 10 && DIFFICULTIES.normal.xp === 25 &&
+       DIFFICULTIES.hard.xp === 50 && DIFFICULTIES.epic.xp === 100,
+  'presets de dificuldade: 10/25/50/100 XP');
+
+/* ---------- 4. Missões únicas ---------- */
+const q1 = Quests.create({ title: 'Concluir projeto', categoryId: prog.id, difficulty: 'hard', xp: 50 });
+assert(q1.title === 'Concluir projeto' && q1.difficulty === 'hard' && q1.recurrence === 'once',
+  'missão única com dificuldade difícil');
+assert(Quests.isAvailable(q1) === true, 'missão única disponível antes de concluir');
+
+const ev1 = Game.completeQuest(q1.id);
+assert(ev1 && ev1.gainedXp === 50, 'XP da dificuldade aplicado (+50)');
+assert(ev1.categoryLevelUp === null && ev1.playerLevelUp === null, 'sem level up com 50 XP');
+assert(Quests.isAvailable(q1) === false, 'missão única indisponível após conclusão');
+assert(Game.completeQuest(q1.id) === null, 'conclusão duplicada é bloqueada');
+
+// XP personalizado prevalece sobre o preset
+Quests.create({ title: 'Tarefa custom', categoryId: prog.id, difficulty: 'easy', xp: 75 });
+const qCustom = Quests.all()[Quests.all().length - 1];
+assert(qCustom.difficulty === 'easy' && qCustom.xp === 75, 'XP manual prevalece sobre a dificuldade');
+
+/* ---------- 5. Recorrência: diária ---------- */
+const daily = Quests.create({ title: 'Estudar 30 minutos', categoryId: prog.id,
+  difficulty: 'normal', xp: 25, recurrence: 'daily' });
+assert(Quests.isAvailable(daily), 'diária disponível hoje');
+Game.completeQuest(daily.id);
+assert(!Quests.isAvailable(daily), 'diária bloqueada após concluir hoje');
+// conclusão de ontem não bloqueia hoje
+Quests.get(daily.id); // noop
+const comps = Game.state.completions;
+comps[comps.length - 1].at = daysAgo(1);
+assert(Quests.isAvailable(daily), 'diária volta a ficar disponível em outro dia');
+Game.completeQuest(daily.id); // conclui de novo (hoje)
+assert(!Quests.isAvailable(daily), 'diária bloqueada novamente hoje');
+
+/* ---------- 6. Recorrência: semanal e mensal ---------- */
+const weekly = Quests.create({ title: 'Revisar objetivos', recurrence: 'weekly', xp: 25 });
+Game.completeQuest(weekly.id);
+assert(!Quests.isAvailable(weekly), 'semanal bloqueada na mesma semana');
+comps[comps.length - 1].at = daysAgo(8); // semana passada
+assert(Quests.isAvailable(weekly), 'semanal disponível em nova semana');
+
+const monthly = Quests.create({ title: 'Balanço do mês', recurrence: 'monthly', xp: 25 });
+Game.completeQuest(monthly.id);
+assert(!Quests.isAvailable(monthly), 'mensal bloqueada no mesmo mês');
+comps[comps.length - 1].at = daysAgo(35);
+assert(Quests.isAvailable(monthly), 'mensal disponível em novo mês');
+
+/* ---------- 7. Exclusão de categoria NUNCA apaga missões ---------- */
+const musica = Categories.create({ name: 'Música', icon: '🎸' });
+const qMusica = Quests.create({ title: 'Praticar escala', categoryId: musica.id, xp: 15 });
+Categories.remove(musica.id, { mode: 'orphan' });
+assert(!Categories.get(musica.id), 'categoria excluída');
+assert(!!Quests.get(qMusica.id) && Quests.get(qMusica.id).categoryId === null,
+  'modo orphan: missão mantida SEM categoria');
+
+const idiomas = Categories.create({ name: 'Idiomas', icon: '🗣️' });
+const qIdiomas = Quests.create({ title: 'Estudar vocabulário', categoryId: idiomas.id, xp: 20 });
+Categories.remove(idiomas.id, { mode: 'reassign', targetId: leitura.id });
+assert(!!Quests.get(qIdiomas.id) && Quests.get(qIdiomas.id).categoryId === leitura.id,
+  'modo reassign: missão reatribuída à categoria escolhida');
+
+/* ---------- 8. Estatísticas derivadas ---------- */
+// Terceira categoria ativa + progresso em 3 atributos (multiclass)
+const exercicio = Categories.create({ name: 'Exercícios', icon: '🏃' });
+const qExe = Quests.create({ title: 'Caminhada', categoryId: exercicio.id, xp: 10 });
+Game.completeQuest(qExe.id);
+Game.completeQuest(qIdiomas.id);
+
+const st = Game.stats();
+assert(st.completedQuests === Game.state.completions.length, 'completedQuests derivado do histórico');
+assert(!('completedCount' in Game.state.player), 'player não armazena contador duplicado');
+assert(Game.state.categories.every(c => !('completedCount' in c)), 'categorias não armazenam contador duplicado');
+assert(st.unlockedCount === Game.state.achievements.length, 'conquistas contadas do array');
+
+/* ---------- 9. Conquistas data-driven ---------- */
+assert(ACHIEVEMENT_DEFS.length >= 32, 'sistema tem ao menos 32 conquistas definidas');
+assert(Achievements.check === undefined || true, 'noop');
+const newly = Achievements.check(Game.state);
+const ids = new Set([...newly.map(d => d.id), ...Game.state.achievements.map(a => a.id)]);
+for (const expected of ['first_step', 'first_reward', 'first_journey',
+  'first_attribute', 'generalist', 'multiclass', 'first_level_up']) {
+  assert(ids.has(expected), `conquista ${expected} desbloqueada`);
 }
-assert(Game.state.quests.length === 10, '10 missões criadas');
+assert(!ids.has('myth') && !ids.has('xp_mountain'), 'conquistas distantes permanecem bloqueadas');
 
-// 4. Completar todas e coletar eventos
-let sawCatLevelUp = false, unlockedIds = [];
-for (const q of [...Game.state.quests]) {
-  const ev = Game.completeQuest(q.id);
-  if (!ev) throw new Error('completeQuest falhou em ' + q.id);
-  if (ev.categoryLevelUp) sawCatLevelUp = true;
-  unlockedIds.push(...ev.unlocked.map(d => d.id));
+/* Rotina: diárias em 7 dias distintos */
+for (let i = 1; i <= 7; i++) {
+  Game.state.completions.push({ id: 'r' + i, questId: daily.id, recurrence: 'daily', xp: 5, at: daysAgo(i * 2) });
 }
-assert(Game.state.player.totalXp === 300, '300 XP total acumulado');
-assert(sawCatLevelUp, 'houve level up de categoria');
-const cSt = statsFromTotalXp(cat1.xp);
-assert(cSt.level === 2 && cSt.current === 150 && cSt.needed === 200,
-  'categoria Lv.2, 150/200 XP com 300 XP totais');
-const pSt = statsFromTotalXp(Game.state.player.totalXp);
-assert(pSt.level === 2 && pSt.current === 150 && pSt.needed === 200, 'jogador Lv.2, 150/200 XP');
-assert(Game.state.player.completedCount === 10, 'contador global = 10');
-assert(cat1.completedCount === 10, 'contador da categoria = 10');
-assert(unlockedIds.includes('first_step') && unlockedIds.includes('adventurer'),
-  'Primeiro Passo e Aventureiro desbloqueadas');
-assert(!unlockedIds.includes('veteran'), 'Veterano ainda bloqueada');
-assert(unlockedIds.includes('first_level_up'), 'Primeiro Level Up desbloqueada');
-assert(Game.state.achievements.every(a => a.unlockedAt), 'conquistas têm data');
+Achievements.check(Game.state);
+assert(Achievements.isUnlocked(Game.state, 'routine'), 'Rotina: 7 dias distintos de diárias');
 
-// 5. Persistência
+/* Constância e Ciclo Completo */
+Game.state.completions.push(
+  { id: 'w1', questId: weekly.id, recurrence: 'weekly', xp: 5, at: weeksAgo(0) },
+  { id: 'w2', questId: weekly.id, recurrence: 'weekly', xp: 5, at: weeksAgo(1) },
+  { id: 'w3', questId: weekly.id, recurrence: 'weekly', xp: 5, at: weeksAgo(2) },
+  { id: 'w4', questId: weekly.id, recurrence: 'weekly', xp: 5, at: weeksAgo(3) },
+  { id: 'm1', questId: monthly.id, recurrence: 'monthly', xp: 5, at: monthsAgo(1) },
+  { id: 'm2', questId: monthly.id, recurrence: 'monthly', xp: 5, at: monthsAgo(2) },
+  { id: 'm3', questId: monthly.id, recurrence: 'monthly', xp: 5, at: monthsAgo(3) },
+);
+Achievements.check(Game.state);
+assert(Achievements.isUnlocked(Game.state, 'consistency'), 'Constância: 4 semanas distintas');
+assert(Achievements.isUnlocked(Game.state, 'full_cycle'), 'Ciclo Completo: 3 meses distintos');
+
+/* Colecionador / Lenda Viva */
+Game.state.achievements = ACHIEVEMENT_DEFS
+  .filter(d => !['collector', 'achievement_hunter', 'living_legend'].includes(d.id))
+  .slice(0, 10)
+  .map(d => ({ id: d.id, unlockedAt: sleepless() }));
+Achievements.check(Game.state);
+assert(Achievements.isUnlocked(Game.state, 'collector'), 'Colecionador com 10 conquistas');
+
+Game.state.achievements = ACHIEVEMENT_DEFS
+  .filter(d => d.id !== 'living_legend')
+  .map(d => ({ id: d.id, unlockedAt: sleepless() }));
+Achievements.check(Game.state);
+assert(Achievements.isUnlocked(Game.state, 'living_legend'), 'Lenda Viva com todas as outras');
+
+/* ---------- 10. Persistência + migração v2 → v3 ---------- */
 Game.save();
 Game.state = null;
 const reloaded = Game.load();
-assert(reloaded !== null && reloaded.player.totalXp === 300, 'estado persistido e recarregado');
-assert(reloaded.quests.filter(q => q.done).length === 10, 'missões concluídas persistidas');
-assert(reloaded.achievements.length >= 3, 'conquistas persistidas');
+assert(reloaded.version === 3, 'save persistido na versão 3');
+assert(reloaded.player.totalXp > 0 && reloaded.completions.length > 0, 'progresso preservado ao reabrir');
 
-// 6. Reabrir missão não remove XP
-Game.state = reloaded;
-Game.reopenQuest(Game.state.quests[0].id);
-assert(Game.state.player.totalXp === 300, 'reabrir mantém XP');
-
-// 7. Editar e excluir missão/categoria
-const q2 = Game.createQuest({ name: 'Temp', desc: 'x', categoryId: cat1.id, xp: 5 });
-Game.updateQuest(q2.id, { name: 'Temp2', xp: 7 });
-assert(Game.state.quests.find(q => q.id === q2.id).xp === 7, 'edição de XP');
-Game.deleteQuest(q2.id);
-assert(!Game.state.quests.find(q => q.id === q2.id), 'exclusão de missão');
-
-const catNew = Game.createCategory('Música', '🎸');
-assert(!!catNew, 'categoria criada');
-const q3 = Game.createQuest({ name: 'Tocar', desc: '', categoryId: catNew.id, xp: 10 });
-Game.deleteCategory(catNew.id);
-assert(!Game.getCategory(catNew.id), 'categoria excluída');
-assert(!Game.state.quests.find(q => q.id === q3.id), 'missões da categoria removidas junto');
-
-// 8. Fórmula: XP necessário = 100 + nível × 50
-assert(xpForNextSafe(1) === 150 && xpForNextSafe(2) === 200 && xpForNextSafe(9) === 550,
-  'fórmula de XP correta');
-
-function xpForNextSafe(l) { return 100 + l * 50; }
-
-// 9. Edição de categoria preserva XP e missões
-const catProg = Game.state.categories[0];
-const progQuests = Game.state.quests.filter(q => q.categoryId === catProg.id).length;
-const progXp = catProg.xp;
-Game.updateCategory(catProg.id, { name: 'Desenvolvimento', icon: '🛠️', desc: 'Código' });
-const renamed = Game.getCategory(catProg.id);
-assert(renamed.name === 'Desenvolvimento' && renamed.icon === '🛠️' && renamed.desc === 'Código',
-  'categoria renomeada com ícone e descrição');
-assert(renamed.xp === progXp &&
-  Game.state.quests.filter(q => q.categoryId === catProg.id).length === progQuests,
-  'edição preserva XP e vínculo das missões');
-
-// 10. Classe personalizada marca flag (conquista Identidade Própria)
-Game.updatePlayer({ class: 'Cavaleiro do Código', customClass: true });
-const newlyIdentity = Game.checkAchievements();
-assert(newlyIdentity.some(d => d.id === 'own_identity'), 'Identidade Própria desbloqueada');
-
-// 11. Nova categoria dispara Explorador/Generalista
-Game.createCategory('Música', '🎸');
-Game.checkAchievements();
-assert(Game.isUnlocked('explorer'), 'Explorador desbloqueada');
-assert(Game.isUnlocked('generalist'), 'Generalista desbloqueada');
-
-// 12. Conquistas de XP/nível gerais
-Game.state.player.totalXp = 5000;
-Game.state.player.level = statsFromTotalXp(5000).level;
-const newlyXp = Game.checkAchievements();
-assert(newlyXp.some(d => d.id === 'xp_hoarder') && newlyXp.some(d => d.id === 'xp_treasure'),
-  'Acumulador e Tesouro de XP desbloqueadas');
-assert(newlyXp.some(d => d.id === 'adventure_lord'), 'Senhor da Aventura no nível geral 10');
-
-// 13. Veterano de Guerra: missões em 4 categorias diferentes
-for (let i = 1; i < 4; i++) {
-  const c = Game.state.categories[i];
-  if (c.completedCount === 0) c.completedCount = 3;
-}
-const newlyWar = Game.checkAchievements();
-assert(newlyWar.some(d => d.id === 'war_veteran'), 'Veterano de Guerra desbloqueada');
-
-// 14. Lenda Viva só com todas as outras
-const othersUnlocked = ACHIEVEMENT_DEFS
-  .filter(d => d.id !== 'living_legend')
-  .every(d => Game.isUnlocked(d.id));
-if (othersUnlocked) {
-  const finalCheck = Game.checkAchievements();
-  assert(finalCheck.some(d => d.id === 'living_legend'), 'Lenda Viva com todas desbloqueadas');
-} else {
-  assert(!Game.isUnlocked('living_legend'), 'Lenda Viva bloqueada sem as demais');
-}
-
-// 15. Migração v1 → v2: save antigo ganha campos novos sem perder nada
 store[Storage.KEY] = JSON.stringify({
-  player: { name: 'Antigo', class: '🧙 Mago', level: 2, totalXp: 200, completedCount: 5 },
-  categories: [{ id: 'c1', icon: '💻', name: 'Programação', xp: 200, completedCount: 5 }],
-  quests: [{ id: 'q1', name: 'Velha', desc: '', categoryId: 'c1', xp: 10, done: true }],
-  achievements: [{ id: 'first_step', unlockedAt: '2024-01-01T00:00:00Z' }],
+  version: 2,
+  player: { name: 'Antigo', class: '🧙 Mago', customClass: false,
+    createdCustomCategory: false, level: 3, totalXp: 400, completedCount: 7,
+    createdAt: '2024-01-01T00:00:00Z' },
+  categories: [{ id: 'c1', icon: '💻', name: 'Programação', desc: '', xp: 400, completedCount: 7 }],
+  quests: [{ id: 'q1', name: 'Velha', desc: 'x', categoryId: 'c1', xp: 30, done: true, doneAt: '2024-02-02T00:00:00Z' }],
+  achievements: [{ id: 'first_step', unlockedAt: '2024-01-05T00:00:00Z' }],
 });
 Game.state = null;
-const migrated = Game.load();
-assert(migrated.version === 2, 'save migrado para versão 2');
-assert(migrated.player.customClass === false &&
-  migrated.player.createdCustomCategory === false, 'flags do player adicionadas');
-assert(migrated.categories[0].desc === '', 'descrição da categoria adicionada');
-assert(migrated.player.totalXp === 200 && migrated.achievements.length === 1,
-  'dados antigos preservados na migração');
+const mig = Game.load();
+assert(mig.version === 3, 'save v2 migrado para v3');
+assert(mig.quests[0].title === 'Velha' && mig.quests[0].description === 'x' &&
+       typeof mig.quests[0].done === 'undefined', 'missão migrada para title/description, done removido');
+assert(mig.quests[0].difficulty === 'hard' && mig.quests[0].recurrence === 'once',
+  'dificuldade inferida pelo XP e recorrência padrão aplicadas');
+assert(mig.categories[0].createdAt === '2024-01-01T00:00:00Z', 'categoria ganha createdAt');
+assert(mig.completions.length >= 1 && mig.completions.some(c => c.questId === 'q1'),
+  'missão concluída virou entrada no histórico');
+assert(!('completedCount' in mig.player) && !('createdCustomCategory' in mig.player),
+  'campos legados do player removidos após migração');
+assert(mig.player.totalXp === 400 && mig.achievements.length === 1, 'XP e conquistas preservados');
+
+// migração de save v1 (sem version)
+delete store[Storage.KEY];
+store[Storage.KEY] = JSON.stringify({
+  player: { name: 'Muito antigo', class: '⚔️ Guerreiro', level: 1, totalXp: 0, completedCount: 0 },
+  categories: [], quests: [], achievements: [],
+});
+Game.state = null;
+const v1 = Game.load();
+assert(v1.version === 3 && Array.isArray(v1.completions), 'save v1 também é migrado direto para v3');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

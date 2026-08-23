@@ -7,7 +7,7 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
 ![localStorage](https://img.shields.io/badge/storage-localStorage-4A4A68)
 
-**LifeQuest** é um Todo List gamificado com estética de RPG retrô. Tarefas e metas da vida real viram **missões**: ao completá-las, você ganha XP nos atributos correspondentes e evolui seu personagem.
+**LifeQuest** é um Todo List gamificado com estética de RPG retrô. Tarefas e metas da vida real viram **missões**: ao completá-las, você ganha XP nos atributos que você mesmo cria e evolui seu personagem.
 
 Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a persistência é feita inteiramente com `localStorage`.
 
@@ -15,125 +15,116 @@ Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a pe
 
 ## 📖 Sobre o projeto
 
-LifeQuest nasceu como um projeto pessoal para explorar três coisas que gosto: **gamificação**, **interfaces retrô** e **desenvolvimento frontend com JavaScript puro**.
+LifeQuest nasceu como um projeto pessoal para explorar três coisas: **gamificação**, **interfaces retrô** e **desenvolvimento frontend com JavaScript puro**.
 
-A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O LifeQuest aplica essa mesma lógica à vida real — estudar, praticar fé, organizar a casa — transformando o esforço cotidiano em progressão visível.
+A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O LifeQuest aplica essa lógica à vida real, transformando o esforço cotidiano em progressão visível.
 
-É também um exercício deliberado de contenção: um MVP construído só com HTML, CSS e Vanilla JS, priorizando o loop central do jogo antes de qualquer funcionalidade extra.
+É também um exercício de contenção: nada de frameworks, bibliotecas de animação ou abstrações desnecessárias — apenas HTML, CSS, Vanilla JS e as APIs nativas do navegador.
 
 ---
 
 ## 🎮 Demonstração
 
-![alt text](image.png)
+<!-- Screenshots serão adicionados aqui.
+     Sugestões: dashboard, missões com dificuldade/recorrência,
+     atributos, conquistas, overlay de Level Up -->
 
-![alt text](image-1.png)
+*Sem screenshots no momento — em breve.*
 
 ---
 
 ## ✨ Funcionalidades
 
-- [x] Criação de personagem (nome e classe, com sugestões ou classe totalmente personalizada);
-- [x] Cinco telas: Início, Missões, Atributos, Conquistas e Personagem;
-- [x] Categorias personalizáveis: criar, editar (nome, ícone, descrição) e excluir;
-- [x] Criação, edição e exclusão de missões;
-- [x] Conclusão e reabertura de missões;
-- [x] Sistema de XP por categoria e XP geral do personagem;
-- [x] Sistema de níveis com fórmula previsível;
+- [x] Criação de personagem (nome e classe sugerida ou totalmente personalizada);
+- [x] **Zero categorias pré-definidas** — o jogador cria os atributos que representam a própria vida;
+- [x] Categorias com nome, ícone, descrição, criação/edição/exclusão;
+- [x] Exclusão de categoria nunca apaga missões: manter sem categoria ou reatribuir;
+- [x] Missões com título, descrição, categoria, dificuldade e frequência;
+- [x] Dificuldades Fácil / Normal / Difícil / Épica preenchem o XP automaticamente (10/25/50/100), com XP personalizável;
+- [x] Missões únicas, diárias, semanais ou mensais — sem duplicar registros no save;
+- [x] Histórico de conclusões separado da definição das missões;
+- [x] Sistema de XP por atributo e nível geral do personagem;
 - [x] Level Up de atributos e geral, com animações;
-- [x] 22 conquistas desbloqueáveis automaticamente;
-- [x] Histórico de XP total e contadores de missões concluídas;
-- [x] Persistência completa com `localStorage`, com migração automática de saves antigos;
-- [x] Interface responsiva (mobile-first, funciona a partir de 320px);
-- [x] Feedback visual: toasts, barras de XP animadas, overlays e microinterações;
+- [x] 32 conquistas desbloqueáveis automaticamente (sistema data-driven);
+- [x] Estatísticas derivadas de uma única fonte de verdade;
+- [x] Persistência versionada em `localStorage` com migração automática;
+- [x] Interface responsiva mobile-first (320px+);
+- [x] Feedback visual: toasts, barras animadas, overlays em fila, microinterações;
 - [x] Suporte a `prefers-reduced-motion`.
 
 ---
 
 ## 🔄 Como funciona
 
-O coração do jogo é este loop:
-
 ```text
-Criar missão
+Criar categorias → Criar missão → Escolher dificuldade/frequência
       ↓
-Completar missão
+Completar missão → ✓ Feedback → +XP → Barra anima
       ↓
-Receber XP
+Level Up? → ✨ LEVEL UP!
       ↓
-Evoluir atributo
-      ↓
-Level Up
-      ↓
-Desbloquear conquistas
+Nova conquista? → 🏆 DESBLOQUEADA
 ```
 
-Cada categoria da vida é um **atributo** com nível próprio — e nenhuma delas é fixa: é possível renomear, trocar o ícone, descrever ou remover qualquer categoria sem perder o XP já conquistado. Uma missão pertence a exatamente uma categoria e vale a quantidade de XP que você definir:
+### Dificuldade
+
+| Dificuldade | XP padrão |
+|---|---|
+| Fácil | 10 |
+| Normal | 25 |
+| Difícil | 50 |
+| Épica | 100 |
+
+Selecionar uma dificuldade preenche o XP automaticamente; alterar o valor manualmente tem prioridade. Há também a opção **Personalizada**, só com o campo de XP livre.
+
+### Frequência
+
+Uma missão é uma **definição**, nunca duplicada no save. O sistema consulta o histórico de conclusões para decidir se ela está disponível:
+
+| Frequência | Regra |
+|---|---|
+| Uma vez | Concluída apenas uma vez |
+| Diária | Uma vez por dia — "✓ COMPLETA HOJE · volta amanhã" |
+| Semanal | Uma vez por semana |
+| Mensal | Uma vez por mês |
+
+Cada conclusão gera uma entrada no histórico (`completions`), preservando quando foi feita, quanto valeu e permitindo futuras estatísticas.
+
+### Categorias
+
+Nenhum atributo vem pronto: você cria os seus (Estudos, Leitura, Exercícios, Projetos...). Renomear ou trocar o ícone não afeta XP nem missões. Ao excluir uma categoria com missões vinculadas, o app pergunta o que fazer:
 
 ```text
-Missão:
-Estudar JavaScript por 1 hora
+O que deseja fazer com as missões?
 
-Categoria:
-💻 Programação
-
-Recompensa:
-+30 XP
-
-Resultado:
-Programação Lv. 4 → Lv. 5
+( ) Manter missões sem categoria
+( ) Reatribuir para outra categoria
+( ) Cancelar
 ```
 
-Ao concluir uma missão:
+### Nível geral
 
-1. O XP é somado ao **atributo** e ao **personagem** (nível geral);
-2. Os contadores de missões concluídas são atualizados;
-3. O sistema verifica se houve level up;
-4. Verifica se alguma conquista foi desbloqueada;
-5. Exibe as recompensas na tela, na ordem.
-
-### Fórmula de XP
+Todo XP ganho em qualquer categoria também soma no personagem. A fórmula é previsível:
 
 ```text
 XP necessário para subir de nível = 100 + (nível atual × 50)
 ```
 
-O XP nunca é apagado: o histórico fica guardado e a barra de progresso mostra apenas o quanto falta dentro do nível atual.
-
-Reabrir uma missão concluída **não remove** o XP já ganho — decisão intencional para manter a simplicidade do MVP.
+O XP histórico nunca é apagado; a barra mostra apenas o progresso dentro do nível atual.
 
 ---
 
 ## 🏆 Conquistas
 
-As conquistas são desbloqueadas automaticamente conforme sua progressão:
+32 conquistas desbloqueadas automaticamente, todas declarativas (`ACHIEVEMENT_DEFS` em `js/game/achievements.js`) — adicionar uma nova é acrescentar uma entrada com uma condição:
 
-| Conquista | Condição |
-|---|---|
-| 🥇 Primeiro Passo | Completar a primeira missão |
-| 🗺️ Aventureiro | Completar 10 missões |
-| 🛡️ Veterano | Completar 50 missões |
-| ⚔️ Herói | Completar 100 missões |
-| ⚔️ Centurião | Completar 250 missões |
-| 💯 Incansável | Completar 500 missões |
-| 👑 Lenda | Completar 1000 missões |
-| ⭐ Primeiro Level Up | Alcançar nível 2 em qualquer categoria |
-| 🔮 Mestre de um Atributo | Alcançar nível 10 em qualquer categoria |
-| 🌟 Primeiro Mestre | Alcançar o nível 10 em qualquer categoria |
-| 🧠 Mestre do Conhecimento | Nível 10 em duas categorias diferentes |
-| 📚 Polímata | Alcançar nível 5 em pelo menos 4 categorias |
-| 🌐 Generalista | Ter pelo menos 5 categorias criadas |
-| 💰 Acumulador de XP | Acumular 1.000 XP total |
-| 💎 Tesouro de XP | Acumular 5.000 XP total |
-| 👑 Senhor da Aventura | Alcançar o nível geral 10 |
-| 🎖️ Veterano de Guerra | Completar missões em 4 categorias diferentes |
-| 🧭 Explorador | Criar a primeira categoria personalizada |
-| 🎭 Identidade Própria | Definir uma classe personalizada |
-| 🏆 Colecionador | Desbloquear 10 conquistas |
-| 🏅 Caçador de Conquistas | Desbloquear 20 conquistas |
-| 🌠 Lenda Viva | Desbloquear todas as outras conquistas |
-
-O sistema foi projetado como uma lista de definições declarativas (`ACHIEVEMENT_DEFS` em `js/game.js`): cada conquista tem nome, ícone, descrição e uma função de verificação — adicionar novas conquistas é questão de acrescentar entradas à lista.
+- **Missões**: Primeiro Passo (1) · Aventureiro (10) · Veterano (50) · Herói (100) · Lenda (1.000) · Mito (5.000)
+- **XP**: Primeira Recompensa (1) · Colecionador de XP (1.000) · Tesouro (5.000) · Fortuna (10.000) · Montanha de XP (50.000)
+- **Níveis**: Evolução (nv.2) · Veterano de Atributo (nv.5) · Mestre (nv.10) · Grande Mestre (nv.20)
+- **Diversidade**: Primeiro Atributo · Especialista (nv.10) · Generalista (3 categorias) · Polímata (5 categorias) · Mestre em Tudo (nv.5 em 5 categorias)
+- **Recorrência**: Rotina (diárias em 7 dias distintos) · Constância (semanais em 4 semanas) · Ciclo Completo (mensais em 3 meses)
+- **Exploração**: Primeira Jornada · Arsenal de Missões (10) · Planejador (25) · Estrategista (50)
+- **Especiais**: Primeiro Level Up · Multiclasse (progresso em 3 atributos) · Colecionador (10 conquistas) · Caçador de Conquistas (25) · Lenda Viva (todas)
 
 ---
 
@@ -142,63 +133,71 @@ O sistema foi projetado como uma lista de definições declarativas (`ACHIEVEMEN
 | Tecnologia | Papel |
 |---|---|
 | **HTML5** | Estrutura das telas e navegação |
-| **CSS3** | Estética RPG retrô, layout responsivo mobile-first e animações |
+| **CSS3** | Estética RPG retrô, responsividade mobile-first e animações |
 | **JavaScript (Vanilla)** | Lógica do jogo, estado central e manipulação do DOM |
 | **localStorage** | Persistência dos dados no navegador |
 
-Nenhum framework frontend, nenhum backend, nenhuma dependência externa de código. As fontes pixeladas (Press Start 2P e VT323) são carregadas via Google Fonts, com fallback para monoespaçada.
+Zero dependências de código. As fontes pixeladas (Press Start 2P e VT323) são carregadas via Google Fonts, com fallback monoespaçado.
 
 ---
 
 ## 🏗️ Arquitetura
 
-A separação principal é entre **lógica do jogo** e **interface**:
+Lógica de negócio ≠ persistência ≠ interface:
 
 ```text
-Interface (ui.js / app.js)
+Interface (ui/*, app.js)
    ↓
-Game Logic (game.js)
+Game Logic (game/*, state.js)
    ↓
-Estado central
+Estado central (single source of truth)
    ↓
 Local Storage (storage.js)
 ```
 
 ```text
 lifequest/
-├── index.html        # shell da aplicação
+├── index.html              # shell + ordem de carregamento
 ├── css/
-│   └── style.css     # tema retrô e responsividade
+│   └── style.css           # tema retrô, responsividade, animações
 ├── js/
-│   ├── storage.js    # leitura/gravação no localStorage
-│   ├── game.js       # regras: XP, níveis, missões, conquistas
-│   ├── ui.js         # renderização das telas, modais e feedbacks
-│   └── app.js        # bootstrap e eventos
-├── test-core.js      # testes headless da lógica do jogo
-└── test-ui.js        # smoke test de interface (requer jsdom)
+│   ├── storage.js          # persistência versionada + migrações
+│   ├── state.js            # estado central, estatísticas derivadas, completeQuest
+│   ├── game/
+│   │   ├── xp.js           # fórmulas de XP/nível (funções puras)
+│   │   ├── categories.js   # CRUD de categorias (exclusão nunca apaga missões)
+│   │   ├── quests.js       # dificuldades, recorrência, disponibilidade
+│   │   └── achievements.js # conquistas data-driven
+│   └── ui/
+│       ├── screens.js      # renderização das telas
+│       ├── modals.js       # modais (missão, categoria, exclusão segura)
+│       └── notifications.js# toasts, overlays, animação das barras
+├── test-core.js            # testes headless da lógica
+└── test-ui.js              # smoke test de interface (requer jsdom)
 ```
 
-Todo o estado vive em um único objeto serializável:
+O estado é um único objeto serializável — contadores deriváveis não são armazenados:
 
 ```javascript
 {
-    version: 2,
-    player: { name, class, customClass, createdCustomCategory, level, totalXp, completedCount },
-    categories: [{ id, icon, name, desc, xp, completedCount }],
-    quests: [{ id, name, desc, categoryId, xp, done }],
+    version: 3,
+    player: { name, class, customClass, createdCategory, level, totalXp },
+    categories: [{ id, icon, name, description, xp, createdAt }],
+    quests: [{ id, title, description, categoryId, difficulty, xp, recurrence, createdAt }],
+    completions: [{ id, questId, recurrence, xp, at }],  // fonte da verdade do histórico
     achievements: [{ id, unlockedAt }]
 }
 ```
 
-Saves de versões antigas são **migrados automaticamente** ao carregar (`Storage.migrate` em `js/storage.js`) — nenhum progresso é perdido entre atualizações.
+Saves antigos (v1/v2) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
 
-Para rodar os testes da lógica (sem navegador):
+Para rodar os testes da lógica:
 
 ```bash
 node test-core.js
 ```
 
-Há também um smoke test de interface com DOM real (`test-ui.js`), que simula o fluxo completo do MVP — criação de personagem, missões, XP e persistência. Ele usa `jsdom` como dependência opcional de desenvolvimento:
+Smoke test de interface (fluxo completo simulado em DOM real):
 
 ```bash
 npm install --no-save jsdom
@@ -209,40 +208,37 @@ node test-ui.js
 
 ## 💾 Persistência
 
-- Não existe backend nem conta de usuário;
-- Todos os dados ficam salvos no `localStorage` do seu navegador;
-- Fechar e reabrir o aplicativo mantém todo o progresso;
-- Limpar os dados de navegação do navegador **apaga** o progresso;
-- Os dados não sincronizam entre dispositivos — cada navegador tem seu próprio save.
-
-Na tela do personagem existe a opção **"Reiniciar aventura"**, que apaga o save permanentemente.
+- Sem backend e sem conta de usuário;
+- Todos os dados ficam no `localStorage` do seu navegador;
+- Fechar e reabrir mantém todo o progresso;
+- Limpar os dados de navegação **apaga** o progresso;
+- Não há sincronização entre dispositivos;
+- Na tela do personagem existe **"Reiniciar aventura"**, que apaga o save permanentemente.
 
 ---
 
 ## 🚀 Como executar
 
-Não há build nem dependências. Duas opções:
+Sem build e sem dependências obrigatórias.
 
 **Opção 1 — abrir direto**
-
-Baixe ou clone o projeto e abra o `index.html` no navegador:
 
 ```bash
 git clone <url-do-repositorio>
 cd lifequest
 ```
 
-**Opção 2 — servidor local (recomendado)**
+e abrir o `index.html` no navegador.
 
-Alguns recursos, como fontes web, funcionam de forma mais confiável via HTTP:
+**Opção 2 — servidor local (recomendado)**
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Depois acesse `http://localhost:8000`.
+e acessar `http://localhost:8000`.
 
-No primeiro acesso, o aplicativo pede a criação do seu personagem. Depois disso, o painel abre direto com as quatro categorias padrão já criadas.
+No primeiro acesso você cria o personagem e, em seguida, os atributos que representam sua vida — o app começa vazio de propósito.
 
 ---
 
@@ -253,25 +249,32 @@ Ideias para o futuro — nada disso existe ainda:
 ### 🚧 Próximos passos
 
 - [ ] Avatar personalizável;
-- [ ] Sistema de roupas e equipamentos;
-- [ ] Inventário;
+- [ ] Equipamentos e inventário;
 - [ ] Streaks diários;
-- [ ] Missões recorrentes;
+- [ ] Estatísticas e gráficos de evolução;
 - [ ] Bosses e desafios;
 - [ ] Classes com habilidades próprias;
 - [ ] PWA;
 - [ ] Notificações;
 - [ ] Sincronização em nuvem;
-- [ ] Mais conquistas e sistemas de progressão.
+- [ ] Exportar/importar save.
 
 ---
 
 ## 💭 Filosofia do projeto
 
-Produtividade costuma ser apresentada como obrigação. O LifeQuest parte do oposto: o progresso pessoal pode ser algo visual, tangível e divertido, como em um RPG. Cada tarefa concluída enche uma barra, cada barra vira um level up — e ver o próprio atributo de "Programação" subir de nível é, muitas vezes, o empurrão que uma lista de tarefas comum não dá.
+Produtividade costuma ser apresentada como obrigação. O LifeQuest parte do oposto: o progresso pessoal pode ser algo visual, tangível e divertido, como em um RPG — e ver o próprio atributo subir de nível é, muitas vezes, o empurrão que uma lista de tarefas comum não dá.
+
+Boa arquitetura > quantidade de funcionalidades. Simplicidade > abstração.
 
 ---
 
 ## 🤝 Contribuindo
 
-Embora seja um projeto pessoal, sugestões, issues e pull requests são bem-vindos. Se for contribuir, mantenha o espírito do MVP: simplicidade primeiro.
+Projeto pessoal, mas sugestões, issues e pull requests são bem-vindos. Se contribuir, mantenha o espírito do MVP: simplicidade primeiro.
+
+---
+
+## 📄 Licença
+
+A licença ainda não foi definida.

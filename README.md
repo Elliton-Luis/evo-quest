@@ -17,7 +17,7 @@ Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a pe
 
 **Sua vida. Suas missões. Seu RPG.**
 
-👉 **[Jogar EvoQuest →](SEU_LINK_AQUI)**
+👉 **[Jogar EvoQuest](https://evo-quest.vercel.app/)**
 
 Desenvolvido com abordagem **mobile-first**. Instale direto pelo navegador e tenha o EvoQuest na tela inicial do seu celular, como um app — sem baixar nada de loja. Seu progresso é salvo localmente no dispositivo.
 

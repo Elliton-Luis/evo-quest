@@ -1,4 +1,4 @@
-// Testes headless do núcleo do LifeQuest (pós-refatoração v3).
+// Testes headless do núcleo do EvoQuest.
 const fs = require('fs');
 const path = require('path');
 
@@ -301,5 +301,16 @@ Shop.equip('av-wizard');
 assert(Shop.avatarIcon() === '🧙‍♂️', 'avatar comprado sobrepõe o básico');
 Shop.unequip('avatar');
 assert(Shop.avatarIcon() === '🧑‍💻', 'desequipar volta ao avatar básico escolhido');
+
+// ---------- Migração de chave antiga (lifequest → evoquest) ----------
+store['lifequest_save_v1'] = store[Storage.KEY]; // save só na chave antiga
+delete store[Storage.KEY];
+Game.state = null;
+const fromLegacy = Game.load();
+assert(fromLegacy !== null && fromLegacy.player.name === 'Muito antigo',
+  'save na chave antiga (lifequest) ainda é carregado');
+Game.save();
+assert(!!store[Storage.KEY] && !store['lifequest_save_v1'],
+  'após salvar, dados migram para a chave nova e a antiga é removida');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

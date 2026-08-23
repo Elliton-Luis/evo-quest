@@ -81,7 +81,7 @@ const Screens = {
       }
     } catch (e) {
       // Nunca deixar a aba "morta": exibe o erro em vez de tela vazia.
-      console.error('LifeQuest: falha ao renderizar', screen, e);
+      console.error('EvoQuest: falha ao renderizar', screen, e);
       const reload = `<button class="btn btn-primary btn-block" style="margin-top:12px" onclick="location.reload(true)">RECARREGAR APLICATIVO</button>`;
       this.el('#screen').innerHTML = `
         <div class="panel" style="text-align:center">
@@ -112,7 +112,7 @@ const Screens = {
     this.el('#screen').innerHTML = `
       <div class="center-screen">
         <div class="intro-box">
-          <h1 class="intro-logo">LIFEQUEST</h1>
+          <h1 class="intro-logo">EVOQUEST</h1>
           <p class="intro-tag">Sua aventura começa agora.</p>
           <div class="panel">
             <form id="char-form">

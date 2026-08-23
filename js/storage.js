@@ -5,26 +5,37 @@
    preservando todo o progresso do usuário. */
 
 const Storage = {
-  KEY: 'lifequest_save_v1',
+  KEY: 'evoquest_save_v1',
+
+  // Chave antiga do save: lida na carga e removida após o primeiro save novo.
+  LEGACY_KEYS: ['lifequest_save_v1'],
+
   VERSION: 4,
 
   save(state) {
     try {
       state.version = this.VERSION;
       localStorage.setItem(this.KEY, JSON.stringify(state));
+      for (const k of this.LEGACY_KEYS) localStorage.removeItem(k);
     } catch (e) {
-      console.error('LifeQuest: falha ao salvar.', e);
+      console.error('EvoQuest: falha ao salvar.', e);
     }
   },
 
   load() {
     try {
-      const raw = localStorage.getItem(this.KEY);
+      let raw = localStorage.getItem(this.KEY);
+      if (!raw) {
+        for (const k of this.LEGACY_KEYS) {
+          raw = localStorage.getItem(k);
+          if (raw) break;
+        }
+      }
       if (!raw) return null;
       const state = this.migrate(JSON.parse(raw));
       return Game.isValidState(state) ? state : null;
     } catch (e) {
-      console.error('LifeQuest: save corrompido.', e);
+      console.error('EvoQuest: save corrompido.', e);
       return null;
     }
   },

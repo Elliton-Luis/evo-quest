@@ -1,4 +1,4 @@
-# LifeQuest
+# EvoQuest
 
 > Transforme sua vida em uma aventura.
 
@@ -7,7 +7,7 @@
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
 ![localStorage](https://img.shields.io/badge/storage-localStorage-4A4A68)
 
-**LifeQuest** é um Todo List gamificado com estética de RPG retrô. Tarefas e metas da vida real viram **missões**: ao completá-las, você ganha XP nos atributos que você mesmo cria e evolui seu personagem.
+**EvoQuest** é um Todo List gamificado com estética de RPG retrô. Tarefas e metas da vida real viram **missões**: ao completá-las, você ganha XP nos atributos que você mesmo cria e evolui seu personagem.
 
 Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a persistência é feita inteiramente com `localStorage`.
 
@@ -15,9 +15,9 @@ Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a pe
 
 ## 📖 Sobre o projeto
 
-LifeQuest nasceu como um projeto pessoal para explorar três coisas: **gamificação**, **interfaces retrô** e **desenvolvimento frontend com JavaScript puro**.
+EvoQuest nasceu como um projeto pessoal para explorar três coisas: **gamificação**, **interfaces retrô** e **desenvolvimento frontend com JavaScript puro**.
 
-A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O LifeQuest aplica essa lógica à vida real, transformando o esforço cotidiano em progressão visível.
+A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O EvoQuest aplica essa lógica à vida real, transformando o esforço cotidiano em progressão visível.
 
 É também um exercício de contenção: nada de frameworks, bibliotecas de animação ou abstrações desnecessárias — apenas HTML, CSS, Vanilla JS e as APIs nativas do navegador.
 
@@ -182,7 +182,7 @@ Local Storage (storage.js)
 ```
 
 ```text
-lifequest/
+evoquest/
 ├── index.html              # shell + ordem de carregamento
 ├── css/
 │   └── style.css           # tema retrô, responsividade, animações
@@ -254,7 +254,7 @@ Sem build e sem dependências obrigatórias.
 
 ```bash
 git clone <url-do-repositorio>
-cd lifequest
+cd evoquest
 ```
 
 e abrir o `index.html` no navegador.
@@ -292,7 +292,7 @@ Ideias para o futuro — nada disso existe ainda:
 
 ## 💭 Filosofia do projeto
 
-Produtividade costuma ser apresentada como obrigação. O LifeQuest parte do oposto: o progresso pessoal pode ser algo visual, tangível e divertido, como em um RPG — e ver o próprio atributo subir de nível é, muitas vezes, o empurrão que uma lista de tarefas comum não dá.
+Produtividade costuma ser apresentada como obrigação. O EvoQuest parte do oposto: o progresso pessoal pode ser algo visual, tangível e divertido, como em um RPG — e ver o próprio atributo subir de nível é, muitas vezes, o empurrão que uma lista de tarefas comum não dá.
 
 Boa arquitetura > quantidade de funcionalidades. Simplicidade > abstração.
 

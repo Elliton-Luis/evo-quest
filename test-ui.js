@@ -25,7 +25,7 @@ function newApp(savedState = null) {
     pretendToBeVisual: true,
   });
   const w = dom.window;
-  if (savedState) w.localStorage.setItem('lifequest_save_v1', savedState);
+  if (savedState) w.localStorage.setItem('evoquest_save_v1', savedState);
   w.eval(code);
   w.document.dispatchEvent(new w.Event('DOMContentLoaded', { bubbles: true }));
   return w;
@@ -164,7 +164,7 @@ function newApp(savedState = null) {
     w.document.body.innerHTML.includes('Boné'), 'inventário lista o item comprado');
 
   /* ---------- 11. Fechar e reabrir o navegador ---------- */
-  const save = w.localStorage.getItem('lifequest_save_v1');
+  const save = w.localStorage.getItem('evoquest_save_v1');
   w = newApp(save);
   const { Game: Game2 } = w.__LQ;
   await sleep(50);

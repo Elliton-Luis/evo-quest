@@ -455,14 +455,14 @@ Object.assign(Screens, {
       <div class="panel" style="text-align:center">
         <div class="panel-title">PERSONAGEM</div>
         <div style="font-size:56px">${Shop.avatarIcon()}</div>
-        <div class="hero-name" style="font-size:24px">${this.esc(p.name)}</div>
+        <div class="hero-name" style="font-size:24px; margin-top:6px">${this.esc(p.name)}</div>
         <div class="hero-sub">${this.esc(p.class)}${p.customClass ? ' · personalizada' : ''}</div>
-        <div class="stat-big" style="margin-top:8px">NÍVEL ${st.playerLevel}</div>
-        <div style="max-width:280px; margin:6px auto 0">
+        <div class="stat-big" style="margin-top:12px">NÍVEL ${st.playerLevel}</div>
+        <div style="max-width:280px; margin:10px auto 0">
           ${this.bar(st.playerProgress.current, st.playerProgress.needed, 'gold', 'player')}
           <div class="xp-label"><span>XP TOTAL</span><span>${this.fmt(st.totalXp)}</span></div>
         </div>
-        <div class="hero-sub" style="color:var(--gold); margin-top:4px">🪙 ${this.fmt(Shop.gold())} Gold</div>
+        <div class="hero-sub" style="color:var(--gold); margin-top:12px">🪙 ${this.fmt(Shop.gold())} Gold</div>
       </div>
 
       <div class="panel">

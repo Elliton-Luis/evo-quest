@@ -226,15 +226,38 @@ h1, h2, h3, .pixel {
   margin-top: 2px;
 }
 
-/* Detalhe (tela atributos) */
-.attr-card .stats-line {
+/* Linha rótulo → valor (estatísticas, equipamento): nome à esquerda,
+   valor destacado e alinhado à direita, sempre com respiro entre ambos. */
+.stats-line {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
+  gap: 20px;
   color: var(--dim);
   font-size: 18px;
+  padding: 7px 0;
+}
+
+.stats-line b {
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stats-line > span {
+  min-width: 0;
+}
+
+/* Listas de linhas consecutivas (estatísticas/equipamento): separador leve. */
+.panel .stats-line + .stats-line {
   border-top: 1px dashed var(--border);
-  padding-top: 6px;
-  margin-top: 8px;
+}
+
+/* Variante nos cartões de atributo: separador tracejado em cima. */
+.attr-card .stats-line {
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+  margin-top: 2px;
 }
 
 /* ---------- Missões ---------- */

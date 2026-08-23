@@ -13,48 +13,53 @@ Tudo roda no navegador, sem framework, sem backend e sem banco de dados — a pe
 
 ---
 
+## 🎮 Jogue agora
+
+**Sua vida. Suas missões. Seu RPG.**
+
+👉 **[Jogar EvoQuest →](SEU_LINK_AQUI)**
+
+Desenvolvido com abordagem **mobile-first**. Instale direto pelo navegador e tenha o EvoQuest na tela inicial do seu celular, como um app — sem baixar nada de loja. Seu progresso é salvo localmente no dispositivo.
+
+### Capturas de tela
+
+| Início | Missões | Estatísticas |
+|---|---|---|
+| ![Início](img/inicio.jpeg) | ![Missões](img/missoes.jpeg) | ![Estatísticas](img/estatisticas.jpeg) |
+
+| Conquistas | Personagem |
+|---|---|
+| ![Conquistas](img/conquistas.jpeg) | ![Personagem](img/personagem.jpeg) |
+
+---
+
 ## 📖 Sobre o projeto
 
 EvoQuest nasceu como um projeto pessoal para explorar três coisas: **gamificação**, **interfaces retrô** e **desenvolvimento frontend com JavaScript puro**.
 
-A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O EvoQuest aplica essa lógica à vida real, transformando o esforço cotidiano em progressão visível.
+A premissa: listas de tarefas comuns não dão sensação de progresso. Em um RPG, cada ação gera XP, cada XP enche uma barra e cada barra cheia vira um level up. O EvoQuest aplica essa lógica à vida real — o esforço cotidiano vira progressão visível, e ver o próprio atributo subir de nível costuma ser o empurrão que uma lista de tarefas comum não dá.
 
-É também um exercício de contenção: nada de frameworks, bibliotecas de animação ou abstrações desnecessárias — apenas HTML, CSS, Vanilla JS e as APIs nativas do navegador.
+É também um exercício de contenção: nada de frameworks, bibliotecas de animação ou abstrações desnecessárias — apenas HTML, CSS, Vanilla JS e as APIs nativas do navegador. **Boa arquitetura > quantidade de funcionalidades. Simplicidade > abstração.**
 
 ---
-
-## 🎮 Demonstração
-
-![Inicio](img/inicio.png)
-
-![Conquistas](img/conquistas.png)
-
 
 ## ✨ Funcionalidades
 
 - [x] Criação de personagem (nome e classe sugerida ou totalmente personalizada);
-- [x] **Zero categorias pré-definidas** — o jogador cria os atributos que representam a própria vida;
-- [x] Categorias com nome, ícone, descrição, criação/edição/exclusão;
+- [x] **Zero categorias pré-definidas** — o jogador cria os atributos que representam a própria vida (nome, ícone, descrição; criação/edição/exclusão);
 - [x] Exclusão de categoria nunca apaga missões: manter sem categoria ou reatribuir;
-- [x] Missões com título, descrição, categoria, dificuldade e frequência;
-- [x] Dificuldades Fácil / Normal / Difícil / Épica preenchem o XP automaticamente (10/25/50/100), com XP personalizável;
+- [x] Missões com título, descrição, categoria, dificuldade, frequência e XP (automático por dificuldade ou personalizável);
 - [x] Perfil do personagem com avatar, estatísticas derivadas e edição (nome/classe/avatar);
 - [x] Avatares básicos escolhíveis + avatares cosméticos na loja;
-- [x] **Gold**: moeda ganha por missão (5–40, conforme dificuldade) com bônus de level up e conquista;
-- [x] 🛒 Loja exclusivamente cosmética: avatares, cabeça, corpo, acessórios e fundos;
-- [x] Itens data-driven com raridade visual (comum → lendário) e itens desbloqueados por conquista;
+- [x] **Gold**: moeda ganha por missão, com bônus de level up e conquista;
+- [x] 🛒 Loja exclusivamente cosmética (avatar, cabeça, corpo, acessórios, fundos), com raridades e itens desbloqueados por conquista;
 - [x] Inventário com equipar/desequipar; economia à prova de duplicação;
-- [x] 📜 **Regrinhas**: compromissos recorrentes com streak — quebrou, streak zera e a penalidade em Gold é aplicada;
-- [x] Missões únicas, diárias, semanais ou mensais — sem duplicar registros no save;
-- [x] Histórico de conclusões separado da definição das missões;
-- [x] Sistema de XP por atributo e nível geral do personagem;
-- [x] Level Up de atributos e geral, com animações;
+- [x] 📜 **Regrinhas**: compromissos recorrentes com streak e penalidade em Gold ao quebrar;
+- [x] Sistema de XP por atributo e nível geral do personagem, com animações de level up;
 - [x] 32 conquistas desbloqueáveis automaticamente (sistema data-driven);
 - [x] Estatísticas derivadas de uma única fonte de verdade;
 - [x] Persistência versionada em `localStorage` com migração automática;
-- [x] Interface responsiva mobile-first (320px+);
-- [x] Feedback visual: toasts, barras animadas, overlays em fila, microinterações;
-- [x] Suporte a `prefers-reduced-motion`.
+- [x] Interface responsiva mobile-first (320px+), com toasts, barras animadas, overlays em fila e suporte a `prefers-reduced-motion`.
 
 ---
 
@@ -123,7 +128,7 @@ O XP histórico nunca é apagado; a barra mostra apenas o progresso dentro do n�
 Regrinhas são **compromissos recorrentes** — diferentes das Missões:
 
 ```text
-⚔️ MISSÃO    → realizar algo        → ganha XP e Gold
+⚔️ MISSÃO    → realizar algo           → ganha XP e Gold
 📜 REGRINHA  → manter um comportamento → preserva o Streak
 ```
 
@@ -217,7 +222,7 @@ evoquest/
 │   │   ├── categories.js   # CRUD de categorias (exclusão nunca apaga missões)
 │   │   ├── quests.js       # dificuldades, recorrência, disponibilidade
 │   │   ├── achievements.js # conquistas data-driven
-│   │   └── shop.js         # itens cosméticos, raridades, compra/equip
+│   │   ├── shop.js         # itens cosméticos, raridades, compra/equip
 │   │   └── regras.js       # regrinhas: streak, quebras e penalidades
 │   └── ui/
 │       ├── screens.js      # renderização das telas
@@ -245,19 +250,6 @@ O estado é um único objeto serializável — contadores deriváveis não são 
 ```
 
 Saves antigos (v1 a v4) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
-
-Para rodar os testes da lógica:
-
-```bash
-node test-core.js
-```
-
-Smoke test de interface (fluxo completo simulado em DOM real):
-
-```bash
-npm install --no-save jsdom
-node test-ui.js
-```
 
 ---
 
@@ -295,13 +287,18 @@ e acessar `http://localhost:8000`.
 
 No primeiro acesso você cria o personagem e, em seguida, os atributos que representam sua vida — o app começa vazio de propósito.
 
+**Testes:**
+
+```bash
+node test-core.js                          # testes headless da lógica
+npm install --no-save jsdom && node test-ui.js  # smoke test de interface
+```
+
 ---
 
 ## 🗺️ Roadmap
 
 Ideias para o futuro — nada disso existe ainda:
-
-### 🚧 Próximos passos
 
 - [ ] Sprites/imagens no lugar dos avatares emoji;
 - [ ] Mais itens cosméticos e efeitos visuais de fundo;
@@ -313,14 +310,6 @@ Ideias para o futuro — nada disso existe ainda:
 - [ ] Notificações;
 - [ ] Sincronização em nuvem;
 - [ ] Exportar/importar save.
-
----
-
-## 💭 Filosofia do projeto
-
-Produtividade costuma ser apresentada como obrigação. O EvoQuest parte do oposto: o progresso pessoal pode ser algo visual, tangível e divertido, como em um RPG — e ver o próprio atributo subir de nível é, muitas vezes, o empurrão que uma lista de tarefas comum não dá.
-
-Boa arquitetura > quantidade de funcionalidades. Simplicidade > abstração.
 
 ---
 

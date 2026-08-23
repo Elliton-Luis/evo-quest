@@ -25,13 +25,10 @@ A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de 
 
 ## 🎮 Demonstração
 
-<!-- Screenshots serão adicionados aqui.
-     Sugestões: dashboard, missões com dificuldade/recorrência,
-     atributos, conquistas, overlay de Level Up -->
+![Inicio](img/inicio.png)
 
-*Sem screenshots no momento — em breve.*
+![Conquistas](img/conquistas.png)
 
----
 
 ## ✨ Funcionalidades
 

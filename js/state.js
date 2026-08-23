@@ -43,6 +43,7 @@ const Game = {
         class: className,
         customClass: !!isCustomClass,
         createdCategory: false, // vira true ao criar a 1ª categoria
+        avatarId: 'default',
         level: 1,
         totalXp: 0,
         createdAt: new Date().toISOString(),
@@ -51,6 +52,17 @@ const Game = {
       quests: [],
       completions: [], // histórico: {id, questId, recurrence, xp, at}
       achievements: [],
+      wallet: { gold: 0 },
+      inventory: {
+        owned: [],
+        equipped: {
+          avatar: null,
+          head: null,
+          body: null,
+          accessory: null,
+          background: null,
+        },
+      },
     };
     this.save();
     return this.state;
@@ -95,6 +107,9 @@ const Game = {
 
     if (category) category.xp += quest.xp;
     this.state.player.totalXp += quest.xp;
+
+    // 1. A conclusão é registrada ANTES de conceder recompensas:
+    //    recarregar a página ou reconcluir nunca duplica Gold/XP.
     this.state.completions.push({
       id: this.uid(),
       questId: quest.id,
@@ -108,14 +123,29 @@ const Game = {
     this.state.player.level = playerAfter;
 
     const unlocked = Achievements.check(this.state);
+
+    // 2. Recompensas de Gold (missão + bônus de level up e conquistas).
+    const catLevelUp = catAfter > catBefore;
+    const playerLevelUp = playerAfter > playerBefore;
+    const goldEarned = quest.difficulty === 'custom'
+      ? CUSTOM_QUEST_GOLD
+      : DIFFICULTIES[quest.difficulty].gold;
+    const goldBonus =
+      (catLevelUp ? ECONOMY.catLevelUpBonus : 0) +
+      (playerLevelUp ? ECONOMY.playerLevelUpBonus : 0) +
+      unlocked.length * ECONOMY.achievementBonus;
+    this.state.wallet.gold += goldEarned + goldBonus;
+
     this.save();
 
     return {
       quest,
       category,
       gainedXp: quest.xp,
-      categoryLevelUp: catAfter > catBefore ? { from: catBefore, to: catAfter } : null,
-      playerLevelUp: playerAfter > playerBefore ? { from: playerBefore, to: playerAfter } : null,
+      goldEarned,
+      goldBonus,
+      categoryLevelUp: catLevelUp ? { from: catBefore, to: catAfter } : null,
+      playerLevelUp: playerLevelUp ? { from: playerBefore, to: playerAfter } : null,
       unlocked,
     };
   },

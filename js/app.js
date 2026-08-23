@@ -83,6 +83,28 @@ const App = {
         break;
       }
 
+      /* loja / inventário */
+      case 'shop-tab':
+        Screens.shopTab = btn.dataset.type;
+        Screens.shop();
+        break;
+      case 'shop-buy': {
+        const result = Shop.buy(btn.dataset.id);
+        if (result.ok) Notify.toast(`🛒 ${result.item.name} comprado!`, true);
+        else if (result.reason === 'poor') Notify.toast('Gold insuficiente');
+        else Notify.toast('Item indisponível');
+        Screens.refresh();
+        break;
+      }
+      case 'shop-equip':
+        if (Shop.equip(btn.dataset.id)) Notify.toast('Item equipado', true);
+        Screens.refresh();
+        break;
+      case 'shop-unequip':
+        if (Shop.unequip(btn.dataset.slot)) Notify.toast('Item desequipado');
+        Screens.refresh();
+        break;
+
       /* modais / overlays */
       case 'modal-backdrop':
         if (e.target === btn) Modals.close();
@@ -283,9 +305,9 @@ const App = {
   flushAchievements() {
     const newly = Achievements.check(Game.state);
     if (!newly.length) return;
-    Game.state.wallet.gold += newly.length * ACHIEVEMENT_GOLD_BONUS;
+    Game.state.wallet.gold += newly.length * ECONOMY.achievementBonus;
     Game.save();
-    Notify.toast(`🏆 +${newly.length * ACHIEVEMENT_GOLD_BONUS} Gold`, true);
+    Notify.toast(`🏆 +${newly.length * ECONOMY.achievementBonus} Gold`, true);
     for (const def of newly) {
       Notify.pushOverlay({
         type: 'achieve',

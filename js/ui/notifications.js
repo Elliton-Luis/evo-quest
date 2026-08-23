@@ -64,7 +64,9 @@ const Notify = {
 
   /** Eventos de Game.completeQuest → toasts + overlays na ordem certa. */
   showCompleteEvents(ev, overlayDelay = 0) {
-    this.toast(`✓ MISSÃO COMPLETA! +${ev.gainedXp} XP`);
+    let toastText = `✓ MISSÃO COMPLETA! +${ev.gainedXp} XP · +${ev.goldEarned} 🪙`;
+    if (ev.goldBonus > 0) toastText += ` · BÔNUS +${ev.goldBonus} 🪙`;
+    this.toast(toastText);
 
     const push = () => {
       if (ev.categoryLevelUp) {

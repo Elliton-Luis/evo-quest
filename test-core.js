@@ -12,13 +12,13 @@ global.localStorage = {
 
 const FILES = [
   'js/storage.js', 'js/game/xp.js', 'js/game/categories.js',
-  'js/game/quests.js', 'js/game/achievements.js', 'js/state.js',
+  'js/game/quests.js', 'js/game/achievements.js', 'js/game/shop.js', 'js/state.js',
 ];
 const code = FILES.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
 const run = new Function('localStorage', code +
-  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES };');
-const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES } =
+  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS };');
+const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS } =
   run(global.localStorage);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
@@ -216,5 +216,90 @@ store[Storage.KEY] = JSON.stringify({
 Game.state = null;
 const v1 = Game.load();
 assert(v1.version === 4 && Array.isArray(v1.completions), 'save v1 também é migrado direto para a versão atual');
+
+/* ---------- 10. Economia: Gold por dificuldade, sem duplicação ---------- */
+assert(Game.state.wallet && Game.state.wallet.gold === 0, 'carteira começa em 0');
+const goldBefore = Game.state.wallet.gold;
+const catEco = Categories.create({ name: 'Rotina', icon: '🔁' });
+
+// missão fácil = 5 gold (+ bônus por eventuais conquistas desbloqueadas)
+const qEasy = Quests.create({ title: 'Fácil', categoryId: catEco.id, difficulty: 'easy', xp: 10 });
+const evEasy = Game.completeQuest(qEasy.id);
+const expectedEasy = DIFFICULTIES.easy.gold +
+  evEasy.unlocked.length * ECONOMY.achievementBonus;
+assert(Game.state.wallet.gold === goldBefore + expectedEasy,
+  `missão fácil paga ${DIFFICULTIES.easy.gold} gold + bônus de conquista quando houver`);
+
+// épica = 40 gold
+const goldMid = Game.state.wallet.gold;
+const qEpic = Quests.create({ title: 'Épica', categoryId: catEco.id, difficulty: 'epic', xp: 100 });
+const evEpic = Game.completeQuest(qEpic.id);
+assert(Game.state.wallet.gold - goldMid >= DIFFICULTIES.epic.gold,
+  'missão épica paga ao menos 40 gold');
+
+// reconcluir é bloqueado → nada de Gold duplicado
+const afterFirst = Game.state.wallet.gold;
+assert(Game.completeQuest(qEpic.id) === null && Game.state.wallet.gold === afterFirst,
+  'reconcluir não duplica Gold');
+
+// custom paga taxa fixa
+const qCustomGold = Quests.create({ title: 'Custom gold', recurrence: 'daily', xp: 7 });
+Game.completeQuest(qCustomGold.id);
+const diffCustom = Game.state.wallet.gold - afterFirst;
+assert(diffCustom >= ECONOMY.achievementBonus || diffCustom > 0, 'missão custom concede Gold fixo positivo');
+assert(Game.state.wallet.gold >= 0, 'Gold nunca fica negativo');
+
+// recarregar não duplica recompensa
+const goldSnapshot = Game.state.wallet.gold;
+Game.save();
+Game.state = null;
+const reSaved = Game.load();
+assert(reSaved.wallet.gold === goldSnapshot, 'Gold preservado exatamente após reload');
+
+/* ---------- 11. Loja: compra, posse, equipar ---------- */
+const cheap = Shop.get('cap');
+assert(cheap.price === 50 && cheap.rarity === 'common', 'item da loja definido por dados');
+assert(!Shop.owns('cap'), 'item não possuído inicialmente');
+
+// sem saldo suficiente → bloqueado
+Game.state.wallet.gold = 10;
+const poorBuy = Shop.buy('cap');
+assert(!poorBuy.ok && poorBuy.reason === 'poor' && Game.state.wallet.gold === 10,
+  'compra sem Gold é recusada e não altera carteira');
+
+// compra válida debita e registra uma única vez
+Game.state.wallet.gold = 100;
+assert(Shop.buy('cap').ok === true, 'compra bem-sucedida');
+assert(Game.state.wallet.gold === 50, 'preço debitado corretamente');
+assert(Shop.buy('cap').ok === false && Shop.owns('cap') &&
+  Game.state.inventory.owned.filter(i => i === 'cap').length === 1,
+  'compra duplicada recusada — item único no inventário');
+
+// equipar / desequipar
+assert(Shop.equip('cap') && Shop.equippedIn('head')?.id === 'cap', 'item equipado');
+assert(Shop.equip('cap') === true && Game.state.inventory.equipped.head === 'cap',
+  'equipar novamente não cria estado estranho');
+assert(Shop.unequip('head') && Shop.equippedIn('head') === null, 'item desequipado');
+assert(Shop.equip('cap-inexistente') === false, 'equipar item inexistente falha com segurança');
+
+// item bloqueado por conquista
+const trophy = Shop.get('gold-trophy');
+assert(trophy.price === null && trophy.unlockAchievement === 'hero', 'item especial definido por conquista');
+assert(Shop.isLocked(trophy), 'troféu bloqueado sem a conquista Herói');
+assert(Shop.buy('gold-trophy').reason === 'locked' && !Shop.owns('gold-trophy'),
+  'compra de item bloqueado é recusada');
+Game.state.achievements.push({ id: 'hero', unlockedAt: sleepless() });
+assert(!Shop.isLocked(trophy) && Shop.buy('gold-trophy').ok, 'troféu liberado após conquista');
+
+// avatar: básico por padrão, item equipado tem prioridade
+assert(BASIC_AVATARS.length >= 8, 'avatares básicos disponíveis');
+Game.state.player.avatarId = 'coder';
+assert(Shop.avatarIcon() === '🧑‍💻', 'avatarId resolve ícone do avatar básico');
+Game.state.wallet.gold = 200;
+assert(Shop.buy('av-wizard').ok, 'avatar comprado com Gold suficiente');
+Shop.equip('av-wizard');
+assert(Shop.avatarIcon() === '🧙‍♂️', 'avatar comprado sobrepõe o básico');
+Shop.unequip('avatar');
+assert(Shop.avatarIcon() === '🧑‍💻', 'desequipar volta ao avatar básico escolhido');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

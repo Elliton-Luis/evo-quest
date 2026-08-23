@@ -773,3 +773,51 @@ select { appearance: none; }
 
 /* Status "completa hoje/esta semana/este mês" */
 .quest-status { color: var(--green); }
+
+/* ============ Loja e inventário (4ª etapa) ============ */
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .shop-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.shop-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.shop-icon { font-size: 40px; line-height: 1.2; }
+
+.shop-item .quest-name { font-size: 18px; }
+.shop-item .btn { font-size: 8px; padding: 8px 6px; }
+.shop-item .quest-desc { font-size: 15px; }
+
+.shop-locked {
+  font-family: var(--font-pixel);
+  font-size: 8px;
+  color: var(--red);
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.btn[disabled], .btn[disabled]:active {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 2px 2px 0 #000;
+}
+
+/* Raridades — mesmas cores da paleta */
+.tag-r-common    { color: var(--dim);    border-color: var(--border); }
+.tag-r-uncommon  { color: var(--green);  border-color: var(--green); }
+.tag-r-rare      { color: var(--blue);   border-color: var(--blue); }
+.tag-r-epic      { color: var(--purple); border-color: var(--purple); }
+.tag-r-legendary { color: var(--gold);   border-color: var(--gold); }

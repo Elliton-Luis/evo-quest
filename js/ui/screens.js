@@ -75,6 +75,8 @@ const Screens = {
       case 'char':     this.character(); break;
       case 'welcome':  this.welcome(); break;
       case 'creation': this.creation(); break;
+      case 'shop':     this.shop(); break;
+      case 'inventory': this.inventory(); break;
     }
     if (screen !== 'creation') this.renderNav();
     window.scrollTo(0, 0);
@@ -215,6 +217,10 @@ const Screens = {
         <div>
           <div class="hero-sub">Conquistas</div>
           <div class="stat-big">${st.unlockedCount}/${st.achievementsTotal}</div>
+        </div>
+        <div>
+          <div class="hero-sub">Gold</div>
+          <div class="stat-big">🪙 ${this.fmt(Shop.gold())}</div>
         </div>
       </div>`;
   },
@@ -466,5 +472,109 @@ Object.assign(Screens, {
         </p>
         <button class="btn btn-danger btn-block" data-action="reset-game">REINICIAR AVENTURA</button>
       </div>`;
+  },
+});
+
+Object.assign(Screens, {
+
+  /* ---------- loja cosmética ---------- */
+
+  shopTab: 'avatar',
+
+  SHOP_TABS: [
+    ['avatar', 'AVATARES'], ['head', 'CABEÇA'], ['body', 'CORPO'],
+    ['accessory', 'ACESSÓRIOS'], ['background', 'FUNDOS'],
+  ],
+
+  shop() {
+    const items = Shop.items(this.shopTab);
+    const gold = Shop.gold();
+
+    const cards = items.map(item => {
+      const owned = Shop.owns(item.id);
+      const locked = Shop.isLocked(item);
+      const equipped = Shop.equippedIn(item.type)?.id === item.id;
+      const rarity = RARITIES[item.rarity];
+      const affordable = item.price !== null && gold >= item.price;
+
+      let footer;
+      if (locked) {
+        footer = `
+          <div class="shop-locked">🔒 BLOQUEADO</div>
+          <div class="quest-desc">${this.esc(item.unlockDesc || '')}</div>`;
+      } else if (equipped) {
+        footer = `<button class="btn btn-success btn-block" data-action="shop-unequip" data-slot="${item.type}">✓ EQUIPADO</button>`;
+      } else if (owned) {
+        footer = `<div class="quest-meta quest-status">✓ COMPRADO</div>
+                  <button class="btn btn-block" data-action="shop-equip" data-id="${item.id}">EQUIPAR</button>`;
+      } else {
+        footer = `
+          <div class="quest-xp" style="padding-top:0">🪙 ${this.fmt(item.price)}</div>
+          <button class="btn ${affordable ? 'btn-primary' : ''} btn-block"
+                  data-action="shop-buy" data-id="${item.id}" ${affordable ? '' : 'disabled'}>
+            ${affordable ? 'COMPRAR' : 'INSUFICIENTE'}
+          </button>`;
+      }
+
+      return `
+        <div class="panel shop-item">
+          <div class="shop-icon">${item.icon}</div>
+          <div class="quest-name">${this.esc(item.name)}</div>
+          <span class="tag tag-r-${item.rarity}">${this.esc(rarity?.label || '')}</span>
+          <div style="margin-top:10px">${footer}</div>
+        </div>`;
+    }).join('');
+
+    this.el('#screen').innerHTML = `
+      <div class="panel summary-grid" style="align-items:center">
+        <div><div class="hero-sub">Gold</div><div class="stat-big">🪙 ${this.fmt(gold)}</div></div>
+        <div class="hero-sub" style="flex:2; text-align:right">Tudo aqui é<br>cosmético — só estilo.</div>
+      </div>
+
+      <div class="tabs">
+        ${this.SHOP_TABS.map(([id, label]) =>
+          `<button class="tab ${this.shopTab === id ? 'active' : ''}"
+                   data-action="shop-tab" data-type="${id}">${label}</button>`).join('')}
+      </div>
+
+      <div class="shop-grid">${cards}</div>
+
+      <button class="btn btn-block" data-action="open-inventory" style="margin-top:4px">🎒 INVENTÁRIO</button>`;
+  },
+
+  /* ---------- inventário ---------- */
+
+  inventory() {
+    const owned = Game.state.inventory.owned
+      .map(id => Shop.get(id))
+      .filter(Boolean);
+
+    const rows = owned.map(item => {
+      const equipped = Shop.equippedIn(item.type)?.id === item.id;
+      const slotLabel =
+        { avatar: 'Avatar', head: 'Cabeça', body: 'Corpo',
+          accessory: 'Acessório', background: 'Fundo' }[item.type] || item.type;
+      return `
+        <div class="quest-item">
+          <div class="attr-icon">${item.icon}</div>
+          <div class="quest-main">
+            <div class="quest-name">${this.esc(item.name)}</div>
+            <div class="quest-meta">
+              ${slotLabel}
+              <span class="tag tag-r-${item.rarity}">${this.esc(RARITIES[item.rarity]?.label || '')}</span>
+            </div>
+          </div>
+          ${equipped
+            ? `<button class="btn btn-success" data-action="shop-unequip" data-slot="${item.type}">✓</button>`
+            : `<button class="btn" data-action="shop-equip" data-id="${item.id}">EQUIPAR</button>`}
+        </div>`;
+    }).join('');
+
+    this.el('#screen').innerHTML = `
+      <div class="panel">
+        <div class="panel-title">🎒 INVENTÁRIO</div>
+        ${rows || '<div class="empty-msg">Nenhum item ainda.<br>Visite a loja para começar sua coleção.</div>'}
+      </div>
+      <button class="btn btn-primary btn-block" data-action="open-shop">🛒 LOJA</button>`;
   },
 });

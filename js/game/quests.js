@@ -4,10 +4,20 @@
    A missão é uma definição; as conclusões vivem em Game.state.completions. */
 
 const DIFFICULTIES = {
-  easy:   { label: 'Fácil',   xp: 10 },
-  normal: { label: 'Normal',  xp: 25 },
-  hard:   { label: 'Difícil', xp: 50 },
-  epic:   { label: 'Épica',   xp: 100 },
+  easy:   { label: 'Fácil',   xp: 10, gold: 5 },
+  normal: { label: 'Normal',  xp: 25, gold: 10 },
+  hard:   { label: 'Difícil', xp: 50, gold: 20 },
+  epic:   { label: 'Épica',   xp: 100, gold: 40 },
+};
+
+// Dificuldade personalizada paga como uma missão normal.
+const CUSTOM_QUEST_GOLD = 10;
+
+// Bônus de economia (concedidos junto com a conclusão, nunca em dobro).
+const ECONOMY = {
+  catLevelUpBonus: 25,
+  playerLevelUpBonus: 50,
+  achievementBonus: 15,
 };
 
 const RECURRENCES = {

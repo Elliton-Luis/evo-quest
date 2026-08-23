@@ -38,6 +38,7 @@ const Game = {
     s.quests ??= [];
     s.completions ??= [];
     s.achievements ??= [];
+    s.regras ??= [];
 
     s.wallet ??= { gold: 0 };
     if (!Number.isFinite(s.wallet.gold) || s.wallet.gold < 0) {
@@ -89,6 +90,7 @@ const Game = {
       quests: [],
       completions: [], // histórico: {id, questId, recurrence, xp, at}
       achievements: [],
+      regras: [], // compromissos recorrentes com streak/penalidade
       wallet: { gold: 0 },
       inventory: {
         owned: [],

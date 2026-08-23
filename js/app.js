@@ -23,6 +23,12 @@ const App = {
       Screens.navigate(Game.state.categories.length === 0 && !Game.state.completions.length
         ? 'welcome' : 'home');
       this.flushAchievements();
+      // Verifica regrinhas quebradas enquanto o app esteve fechado.
+      const breaks = Regras.evaluateAll();
+      if (breaks.length) {
+        const total = breaks.reduce((s, b) => s + b.penalty, 0);
+        Notify.toast(`❌ ${breaks.length} regrinha(s) quebrada(s) · -${total} 🪙`);
+      }
     } else {
       Screens.navigate('creation');
     }
@@ -105,6 +111,32 @@ const App = {
         Screens.refresh();
         break;
 
+      /* regrinhas */
+      case 'regra-new':
+        Modals.regra(null);
+        break;
+      case 'regra-edit':
+        Modals.regra(Regras.get(btn.dataset.id));
+        break;
+      case 'regra-fulfill': {
+        const result = Regras.fulfill(btn.dataset.id);
+        if (result.ok) {
+          const r = result.rule;
+          Notify.toast(`🔥 ${r.title}: ${REGRA_FREQUENCIES[r.frequency].done.toLowerCase()}`, true);
+        } else if (result.duplicate) {
+          Notify.toast('Já registrada neste período');
+        }
+        Screens.refresh();
+        break;
+      }
+      case 'regra-delete':
+        Modals.confirm(
+          'EXCLUIR REGRINHA',
+          'A regrinha e seu histórico de streak serão removidos. Gold não é devolvido.',
+          'delete-regra:' + btn.dataset.id
+        );
+        break;
+
       /* modais / overlays */
       case 'modal-backdrop':
         if (e.target === btn) Modals.close();
@@ -120,6 +152,10 @@ const App = {
           Notify.toast('Missão excluída', true);
           Screens.refresh();
           this.flushAchievements(); // arsenal/planejador contam cadastro
+        } else if (kind === 'delete-regra') {
+          Regras.remove(id);
+          Notify.toast('Regrinha excluída', true);
+          Screens.refresh();
         } else if (kind === 'reset') {
           Game.reset();
           Screens.navigate('creation');
@@ -242,6 +278,32 @@ const App = {
       Notify.toast('Categoria excluída', true);
       Screens.refresh();
       this.flushAchievements();
+      return;
+    }
+
+    /* criar/editar regrinha */
+    if (form.id === 'regra-form') {
+      e.preventDefault();
+      const id = form.dataset.id;
+      const freq = form.querySelector('input[name="r-freq"]:checked');
+      const data = {
+        title: Screens.el('#r-title').value,
+        description: Screens.el('#r-desc').value,
+        categoryId: Screens.el('#r-cat').value || null,
+        frequency: freq ? freq.value : 'daily',
+        penalty: Screens.el('#r-penalty').value,
+        deadline: Screens.el('#r-deadline').value || null,
+      };
+      if (id) {
+        Regras.update(id, data);
+        Notify.toast('Regrinha atualizada');
+      } else {
+        const r = Regras.create(data);
+        if (!r) return;
+        Notify.toast(`📜 ${r.title} criada!`);
+      }
+      Modals.close();
+      Screens.refresh();
       return;
     }
 

@@ -44,6 +44,7 @@ A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de 
 - [x] 🛒 Loja exclusivamente cosmética: avatares, cabeça, corpo, acessórios e fundos;
 - [x] Itens data-driven com raridade visual (comum → lendário) e itens desbloqueados por conquista;
 - [x] Inventário com equipar/desequipar; economia à prova de duplicação;
+- [x] 📜 **Regrinhas**: compromissos recorrentes com streak — quebrou, streak zera e a penalidade em Gold é aplicada;
 - [x] Missões únicas, diárias, semanais ou mensais — sem duplicar registros no save;
 - [x] Histórico de conclusões separado da definição das missões;
 - [x] Sistema de XP por atributo e nível geral do personagem;
@@ -114,6 +115,28 @@ XP necessário para subir de nível = 100 + (nível atual × 50)
 ```
 
 O XP histórico nunca é apagado; a barra mostra apenas o progresso dentro do nível atual.
+
+---
+
+## 📜 Regrinhas
+
+Regrinhas são **compromissos recorrentes** — diferentes das Missões:
+
+```text
+⚔️ MISSÃO    → realizar algo        → ganha XP e Gold
+📜 REGRINHA  → manter um comportamento → preserva o Streak
+```
+
+Cada regrinha tem nome, descrição opcional, categoria opcional, frequência (diária/semanal/mensal), **penalidade em Gold** e horário limite opcional (diárias).
+
+A lógica é baseada no **não cumprimento**: você não precisa marcar como concluído todos os dias. Enquanto nenhum período terminar vazio, o streak continua — e o botão `✓ CUMPRIR` existe para registrar explicitamente. Quando um período termina sem registro:
+
+```text
+❌ REGRA QUEBRADA
+Streak: 14 → 0 · Penalidade: -10 🪙
+```
+
+A verificação é *lazy* (roda ao abrir o app/renderizar a aba) — sem cron nem timers. Cada quebra é penalizada uma única vez.
 
 ---
 
@@ -195,6 +218,7 @@ evoquest/
 │   │   ├── quests.js       # dificuldades, recorrência, disponibilidade
 │   │   ├── achievements.js # conquistas data-driven
 │   │   └── shop.js         # itens cosméticos, raridades, compra/equip
+│   │   └── regras.js       # regrinhas: streak, quebras e penalidades
 │   └── ui/
 │       ├── screens.js      # renderização das telas
 │       ├── modals.js       # modais (missão, categoria, exclusão segura)
@@ -207,18 +231,20 @@ O estado é um único objeto serializável — contadores deriváveis não são 
 
 ```javascript
 {
-    version: 4,
+    version: 5,
     player: { name, class, customClass, avatarId, createdCategory, level, totalXp },
     categories: [{ id, icon, name, description, xp, createdAt }],
     quests: [{ id, title, description, categoryId, difficulty, xp, recurrence, createdAt }],
     completions: [{ id, questId, recurrence, xp, at }],  // fonte da verdade do histórico
     achievements: [{ id, unlockedAt }],
     wallet: { gold },
-    inventory: { owned: [], equipped: { avatar, head, body, accessory, background } }
+    inventory: { owned: [], equipped: { avatar, head, body, accessory, background } },
+    regras: [{ id, title, description, categoryId, frequency, penalty, deadline,
+               streak, brokenCount, goldLost, records }]
 }
 ```
 
-Saves antigos (v1/v2/v3) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
+Saves antigos (v1 a v4) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
 
 Para rodar os testes da lógica:
 
@@ -279,7 +305,7 @@ Ideias para o futuro — nada disso existe ainda:
 
 - [ ] Sprites/imagens no lugar dos avatares emoji;
 - [ ] Mais itens cosméticos e efeitos visuais de fundo;
-- [ ] Streaks diários;
+- [ ] Metas de frequência nas regrinhas (ex.: 3× por semana);
 - [ ] Estatísticas e gráficos de evolução;
 - [ ] Bosses e desafios;
 - [ ] Classes com habilidades próprias;

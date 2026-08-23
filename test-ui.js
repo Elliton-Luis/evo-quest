@@ -7,10 +7,10 @@ const { JSDOM } = require('jsdom');
 const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const FILES = ['storage', 'game/xp', 'game/categories', 'game/quests',
-  'game/achievements', 'game/shop', 'state', 'ui/notifications', 'ui/modals',
-  'ui/screens', 'app'];
+  'game/achievements', 'game/shop', 'game/regras', 'state', 'ui/notifications',
+  'ui/modals', 'ui/screens', 'app'];
 const code = FILES.map(f => fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'))
-  .join('\n') + '\n;window.__LQ = { Game, Screens, Quests, Categories, Shop };';
+  .join('\n') + '\n;window.__LQ = { Game, Screens, Quests, Categories, Shop, Regras };';
 
 function assert(cond, msg) {
   if (!cond) { console.error('FAIL:', msg); process.exit(1); }
@@ -47,7 +47,7 @@ function newApp(savedState = null) {
   w.document.getElementById('char-form')
     .dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
 
-  const { Game, Shop } = w.__LQ;
+  const { Game, Shop, Regras } = w.__LQ;
   assert(Game.state.player.customClass === true && Game.state.categories.length === 0,
     'personagem criado com classe personalizada e 0 categorias');
 
@@ -113,7 +113,25 @@ function newApp(savedState = null) {
   assert(w.document.body.innerHTML.includes('HISTÓRICO (1)'),
     'aba de histórico lista a conclusão registrada');
 
-  /* ---------- 8. Perfil: dados consistentes + edição ---------- */
+  /* ---------- 8. Regrinhas: criar, cumprir, ver streak ---------- */
+  w.document.querySelector('[data-action="nav"][data-screen="regras"]').click();
+  assert(w.document.body.innerHTML.includes('NOVA REGRINHA'), 'tela de regrinhas aberta');
+  w.document.querySelector('[data-action="regra-new"]').click();
+  assert(w.document.getElementById('regra-form'), 'modal de nova regrinha aberto');
+  w.document.getElementById('r-title').value = 'Leitura diária';
+  const catSel2 = w.document.getElementById('r-cat');
+  catSel2.value = catSel2.options[1]?.value || '';
+  w.document.getElementById('regra-form')
+    .dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  const regra = Game.state.regras[0];
+  assert(regra && regra.title === 'Leitura diária', 'regrinha criada');
+
+  w.document.querySelector('[data-action="regra-fulfill"]').click();
+  assert(Regras.isFulfilledNow(regra), 'cumprimento registrado no período atual');
+  assert(w.document.body.innerHTML.includes('CUMPRIDA HOJE'),
+    'cartão mostra status CUMPRIDA HOJE e streak');
+
+  /* ---------- 9. Perfil: dados consistentes + edição ---------- */
   w.document.querySelector('[data-action="nav"][data-screen="char"]').click();
   assert(w.document.body.innerHTML.includes('PERSONAGEM') &&
     w.document.body.innerHTML.includes('Alice') &&
@@ -168,7 +186,7 @@ function newApp(savedState = null) {
   w = newApp(save);
   const { Game: Game2 } = w.__LQ;
   await sleep(50);
-  assert(Game2.load() && Game2.state.version === 4, 'save recarregado na versão 4');
+  assert(Game2.load() && Game2.state.version === 5, 'save recarregado na versão 5');
   assert(!w.document.getElementById('char-form'), 'criação não é exibida novamente');
   assert(Game2.state.player.name === 'Alice II' &&
     Game2.state.player.totalXp === 75 &&

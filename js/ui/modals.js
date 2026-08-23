@@ -213,3 +213,67 @@ const Modals = {
       </form>`);
   },
 };
+
+Object.assign(Modals, {
+
+  /* ---------- regrinha (criar/editar) ---------- */
+
+  regra(regra = null) {
+    const catOptions =
+      `<option value="" ${regra && !regra.categoryId ? 'selected' : ''}>— Sem categoria —</option>` +
+      Categories.all().map(c => `
+        <option value="${c.id}" ${regra && regra.categoryId === c.id ? 'selected' : ''}>
+          ${this.esc(c.icon + ' ' + c.name)}
+        </option>`).join('');
+
+    const freqOptions = Object.entries(REGRA_FREQUENCIES)
+      .map(([id, f]) => `
+        <label>
+          <input type="radio" name="r-freq" value="${id}"
+                 ${((regra && regra.frequency) || 'daily') === id ? 'checked' : ''}>
+          <span class="choice-pill">${this.esc(f.label)}</span>
+        </label>`).join('');
+
+    this.open(`
+      <div class="modal-title">${regra ? 'EDITAR REGRINHA' : 'NOVA REGRINHA'}</div>
+      <form id="regra-form" data-id="${regra ? regra.id : ''}">
+        <div class="field">
+          <label for="r-title">NOME DA REGRINHA</label>
+          <input type="text" id="r-title" maxlength="60" required
+                 value="${regra ? this.esc(regra.title) : ''}" placeholder="Ex.: Leitura diária">
+        </div>
+        <div class="field">
+          <label for="r-desc">DESCRIÇÃO (OPCIONAL)</label>
+          <textarea id="r-desc" maxlength="200">${regra ? this.esc(regra.description) : ''}</textarea>
+        </div>
+        <div class="field">
+          <label for="r-cat">CATEGORIA (OPCIONAL)</label>
+          <select id="r-cat">${catOptions}</select>
+        </div>
+        <div class="field">
+          <label>FREQUÊNCIA</label>
+          <div class="choice-group">${freqOptions}</div>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label for="r-penalty">PENALIDADE (GOLD)</label>
+            <input type="number" id="r-penalty" min="0" max="9999" required
+                   value="${regra ? regra.penalty : 10}">
+          </div>
+          <div class="field">
+            <label for="r-deadline">HORÁRIO LIMITE (OPCIONAL)</label>
+            <input type="time" id="r-deadline" value="${regra && regra.deadline ? regra.deadline : ''}">
+          </div>
+        </div>
+        <p class="hero-sub" style="font-size:16px">
+          Se um período terminar sem cumprimento, o streak zera e a
+          penalidade é descontada do Gold. O horário limite só se aplica
+          às regrinhas diárias.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-action="modal-cancel">CANCELAR</button>
+          <button type="submit" class="btn btn-primary">${regra ? 'SALVAR' : 'CRIAR'}</button>
+        </div>
+      </form>`);
+  },
+});

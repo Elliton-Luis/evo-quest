@@ -10,7 +10,7 @@ const Storage = {
   // Chave antiga do save: lida na carga e removida após o primeiro save novo.
   LEGACY_KEYS: ['lifequest_save_v1'],
 
-  VERSION: 4,
+  VERSION: 5,
 
   save(state) {
     try {
@@ -135,6 +135,12 @@ const Storage = {
         },
       };
       state.version = 4;
+    }
+
+    // v4 → v5: Regrinhas (compromissos recorrentes com streak e penalidade).
+    if (state.version < 5) {
+      state.regras ??= [];
+      state.version = 5;
     }
 
     return state;

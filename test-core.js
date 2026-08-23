@@ -12,13 +12,14 @@ global.localStorage = {
 
 const FILES = [
   'js/storage.js', 'js/game/xp.js', 'js/game/categories.js',
-  'js/game/quests.js', 'js/game/achievements.js', 'js/game/shop.js', 'js/state.js',
+  'js/game/quests.js', 'js/game/achievements.js', 'js/game/shop.js',
+  'js/game/regras.js', 'js/state.js',
 ];
 const code = FILES.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
 const run = new Function('localStorage', code +
-  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS };');
-const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS } =
+  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS, Regras };');
+const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS, Regras } =
   run(global.localStorage);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
@@ -181,7 +182,7 @@ assert(Achievements.isUnlocked(Game.state, 'living_legend'), 'Lenda Viva com tod
 Game.save();
 Game.state = null;
 const reloaded = Game.load();
-assert(reloaded.version === 4, 'save persistido na versão atual');
+assert(reloaded.version === 5, 'save persistido na versão atual');
 assert(reloaded.player.totalXp > 0 && reloaded.completions.length > 0, 'progresso preservado ao reabrir');
 
 store[Storage.KEY] = JSON.stringify({
@@ -195,7 +196,7 @@ store[Storage.KEY] = JSON.stringify({
 });
 Game.state = null;
 const mig = Game.load();
-assert(mig.version === 4, 'save v2 migrado para a versão atual');
+assert(mig.version === 5, 'save v2 migrado para a versão atual');
 assert(mig.quests[0].title === 'Velha' && mig.quests[0].description === 'x' &&
        typeof mig.quests[0].done === 'undefined', 'missão migrada para title/description, done removido');
 assert(mig.quests[0].difficulty === 'hard' && mig.quests[0].recurrence === 'once',
@@ -215,7 +216,7 @@ store[Storage.KEY] = JSON.stringify({
 });
 Game.state = null;
 const v1 = Game.load();
-assert(v1.version === 4 && Array.isArray(v1.completions), 'save v1 também é migrado direto para a versão atual');
+assert(v1.version === 5 && Array.isArray(v1.completions), 'save v1 também é migrado direto para a versão atual');
 
 /* ---------- 10. Economia: Gold por dificuldade, sem duplicação ---------- */
 assert(Game.state.wallet && Game.state.wallet.gold === 0, 'carteira começa em 0');
@@ -312,5 +313,95 @@ assert(fromLegacy !== null && fromLegacy.player.name === 'Muito antigo',
 Game.save();
 assert(!!store[Storage.KEY] && !store['lifequest_save_v1'],
   'após salvar, dados migram para a chave nova e a antiga é removida');
+
+/* ---------- 12. Regrinhas: streak, quebra e penalidade ---------- */
+// Estado limpo para testar regrinhas isoladamente
+Game.createPlayer('Disciplinado', '🛡️ Paladino');
+const catR = Categories.create({ name: 'Hábitos', icon: '📜' });
+assert(Game.state.regras.length === 0, 'novo estado inicia sem regrinhas');
+
+// criação com categoria opcional
+const rLeitura = Regras.create({ title: 'Leitura diária', categoryId: catR.id,
+  frequency: 'daily', penalty: 10, deadline: '23:30' });
+const rGeral = Regras.create({ title: 'Dormir antes das 23:30', frequency: 'daily' });
+assert(rLeitura && rGeral, 'regrinhas criadas');
+assert(rGeral.categoryId === null, 'regrinha funciona SEM categoria');
+assert(rLeitura.penalty === 10 && rLeitura.deadline === '23:30', 'penalidade e horário limite armazenados');
+
+const DAY = 24 * 60 * 60 * 1000;
+const now = new Date();
+
+// cumpriu ontem e hoje → streak 2
+Regras.fulfill(rLeitura.id, new Date(now.getTime() - DAY));
+Regras.fulfill(rLeitura.id, now);
+assert(Regras.streakOf(rLeitura) === 2, 'streak conta períodos consecutivos cumpridos');
+
+// não pode registrar duas vezes no mesmo período
+const dup = Regras.fulfill(rLeitura.id, now);
+assert(!dup.ok && dup.duplicate, 'cumprimento duplicado no mesmo período é bloqueado');
+
+// ontem cumprida, hoje pendente → streak preservado (dia ainda não acabou)
+assert(Regras.streakOf(rLeitura) === 2 || Regras.evaluate(rLeitura, now) === null,
+  'pendente hoje ainda não quebra a regra');
+
+// amanhã sem ter cumprido hoje → quebra detectada, streak zera, penalidade aplicada
+const rQuebra = Regras.create({ title: 'Rotina de teste', categoryId: catR.id,
+  frequency: 'daily', penalty: 10 });
+Regras.fulfill(rQuebra.id, new Date(now.getTime() - DAY)); // só ontem foi cumprida
+const goldAntes = Game.state.wallet.gold;
+const amanha = new Date(now.getTime() + DAY);
+const breakEv = Regras.evaluate(rQuebra, amanha);
+assert(!!breakEv && breakEv.penalty === 10, 'quebra detectada com penalidade -10');
+assert(rQuebra.streak === 0, 'streak zerou após a quebra');
+assert(Game.state.wallet.gold === Math.max(0, goldAntes - 10), 'Gold descontado (sem ficar negativo)');
+assert(rQuebra.brokenCount === 1 && rQuebra.goldLost === 10, 'estatísticas de quebra registradas');
+
+// avaliar de novo NÃO aplica penalidade em dobro
+Regras.evaluate(rQuebra, amanha);
+Regras.evaluate(rQuebra, amanha);
+assert(rQuebra.brokenCount === 1 && Game.state.wallet.gold === Math.max(0, goldAntes - 10),
+  'penalidade aplicada apenas uma vez por quebra');
+
+// regra geral sem categoria também quebra após período perdido
+const evGeral = Regras.evaluate(rGeral, new Date(now.getTime() + DAY));
+assert(evGeral === null || evGeral.missedKey, 'avaliação de regra sem categoria é segura');
+
+/* semanal e mensal */
+const rSemanal = Regras.create({ title: 'Exercício da semana', frequency: 'weekly', penalty: 20 });
+Regras.fulfill(rSemanal.id, now);
+assert(Regras.streakOf(rSemanal) >= 1, 'semanal com streak ativo');
+// cumprimento há 8 dias não protege esta semana? depende da semana — testa quebra futura:
+const rMensal = Regras.create({ title: 'Balanço mensal', frequency: 'monthly', penalty: 5 });
+Regras.fulfill(rMensal.id, monthsAgo(2)); // cumpriu há 2 meses
+Regras.fulfill(rMensal.id, monthsAgo(1)); // cumpriu mês passado
+assert(Regras.streakOf(rMensal) >= 2, 'mensal mantém streak entre meses');
+// mês atual não cumprido ainda não quebra; mês que vem, sim
+const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 15);
+const evMes = Regras.evaluate(rMensal, nextMonth);
+assert(evMes !== null && evMes.penalty === 5, 'mensal quebra quando o mês termina vazio');
+
+/* deadline diário antecipa a quebra */
+Game.state.wallet.gold = 100;
+const rPrazo = Regras.create({ title: 'Acordar cedo', frequency: 'daily', penalty: 15, deadline: '07:00' });
+const antesDoPrazo = new Date().getHours() < 7;
+const simulado = new Date();
+simulado.setHours(antesDoPrazo ? 3 : 8, 0, 0, 0); // 03:00 (antes) ou 08:00 (depois do prazo)
+const evPrazo = Regras.evaluate(rPrazo, simulado);
+assert(antesDoPrazo
+  ? evPrazo === null
+  : (evPrazo !== null && evPrazo.penalty === 15),
+  'horário limite diário: quebra somente após o prazo sem cumprir');
+
+/* migração v4 → v5 adiciona regras[] */
+store[Storage.KEY] = JSON.stringify({
+  version: 4,
+  player: { name: 'V4', class: 'X', avatarId: 'default', customClass: false,
+    createdCategory: true, level: 1, totalXp: 0, createdAt: sleepless() },
+  categories: [], quests: [], completions: [], achievements: [],
+  wallet: { gold: 0 }, inventory: { owned: [], equipped: {} },
+});
+Game.state = null;
+const v4 = Game.load();
+assert(v4.version === 5 && Array.isArray(v4.regras), 'save v4 migrado para v5 com regras[]');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

@@ -821,3 +821,19 @@ select { appearance: none; }
 .tag-r-rare      { color: var(--blue);   border-color: var(--blue); }
 .tag-r-epic      { color: var(--purple); border-color: var(--purple); }
 .tag-r-legendary { color: var(--gold);   border-color: var(--gold); }
+
+/* ============ Regrinhas (5ª etapa) ============ */
+
+.streak-line {
+  color: var(--gold);
+  font-size: 18px;
+}
+
+.quest-broken {
+  color: var(--red);
+}
+
+/* Nav com 6 abas: mantém toque confortável em 320px */
+@media (max-width: 767px) {
+  .nav-btn { font-size: 13.5px; }
+}

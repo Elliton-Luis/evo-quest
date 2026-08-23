@@ -10,6 +10,7 @@ const Screens = {
   NAV_ITEMS: [
     { id: 'home',   icon: '🏠', label: 'Início' },
     { id: 'quests', icon: '⚔️', label: 'Missões' },
+    { id: 'regras', icon: '📜', label: 'Regras' },
     { id: 'attrs',  icon: '📊', label: 'Atributos' },
     { id: 'achv',   icon: '🏆', label: 'Conquistas' },
     { id: 'char',   icon: '👤', label: 'Personagem' },
@@ -78,6 +79,7 @@ const Screens = {
         case 'creation': this.creation(); break;
         case 'shop':     this.shop(); break;
         case 'inventory': this.inventory(); break;
+        case 'regras':   this.regras(); break;
       }
     } catch (e) {
       // Nunca deixar a aba "morta": exibe o erro em vez de tela vazia.
@@ -589,5 +591,95 @@ Object.assign(Screens, {
         ${rows || '<div class="empty-msg">Nenhum item ainda.<br>Visite a loja para começar sua coleção.</div>'}
       </div>
       <button class="btn btn-primary btn-block" data-action="open-shop">🛒 LOJA</button>`;
+  },
+});
+
+Object.assign(Screens, {
+
+  /* ---------- regrinhas ---------- */
+
+  regraStatus(r) {
+    if (Regras.isFulfilledNow(r)) {
+      return `<div class="quest-meta quest-status">✓ ${this.esc(REGRA_FREQUENCIES[r.frequency].done)}</div>`;
+    }
+    const brokenRecently = r.streak === 0 && r.brokenCount > 0;
+    let line = brokenRecently
+      ? '❌ REGRA QUEBRADA · streak 0'
+      : `⏳ Pendente neste período`;
+    if (r.frequency === 'daily' && r.deadline && !Regras.isFulfilledNow(r)) {
+      line += ` · prazo ${r.deadline}`;
+    }
+    return `<div class="quest-meta ${brokenRecently ? 'quest-broken' : ''}">${line}</div>`;
+  },
+
+  regras() {
+    // Avalia quebras antes de renderizar (verificação lazy).
+    const breaks = Regras.evaluateAll();
+    if (breaks.length) {
+      Game.save();
+      const total = breaks.reduce((s, b) => s + b.penalty, 0);
+      Notify.toast(`❌ ${breaks.length} regrinha(s) quebrada(s) · -${total} 🪙`);
+    }
+
+    const list = [...Regras.all()].reverse();
+    const items = list.length
+      ? list.map(r => this.regraCard(r)).join('')
+      : `<div class="empty-msg">Nenhuma regrinha ainda.<br>
+         Crie compromissos que você quer manter todos os dias.</div>`;
+
+    const totalBreaks = Regras.all().reduce((s, r) => s + (r.brokenCount || 0), 0);
+    const goldLost = Regras.all().reduce((s, r) => s + (r.goldLost || 0), 0);
+
+    this.el('#screen').innerHTML = `
+      <div class="panel summary-grid">
+        <div>
+          <div class="hero-sub">Regrinhas</div>
+          <div class="stat-big">${this.fmt(Regras.all().length)}</div>
+        </div>
+        <div>
+          <div class="hero-sub">Quebras</div>
+          <div class="stat-big">${this.fmt(totalBreaks)}</div>
+        </div>
+        <div>
+          <div class="hero-sub">Gold perdido</div>
+          <div class="stat-big" style="color:var(--red)">-🪙 ${this.fmt(goldLost)}</div>
+        </div>
+      </div>
+
+      <div class="panel">${items}</div>
+
+      <button class="btn btn-primary btn-block" data-action="regra-new">+ NOVA REGRINHA</button>`;
+  },
+
+  regraCard(r) {
+    const freq = REGRA_FREQUENCIES[r.frequency];
+    const cat = r.categoryId && Categories.get(r.categoryId);
+    const streakLabel = `${this.fmt(r.streak)} ${freq.unit}`;
+
+    const meta = [
+      cat ? this.esc(cat.icon + ' ' + cat.name) : '<span class="tag">sem categoria</span>',
+      `<span class="tag">${this.esc(freq.label)}</span>`,
+      r.penalty > 0 ? `<span class="tag tag-hard">-${r.penalty} 🪙</span>` : '',
+    ].filter(Boolean).join(' ');
+
+    return `
+      <div class="quest-item">
+        <div class="quest-check" data-action="regra-fulfill" data-id="${r.id}"
+             title="Registrar cumprimento">${Regras.isFulfilledNow(r) ? '☑' : '🔥'}</div>
+        <div class="quest-main">
+          <div class="quest-name">${this.esc(r.title)}</div>
+          ${r.description ? `<div class="quest-desc">${this.esc(r.description)}</div>` : ''}
+          <div class="quest-meta">${meta}</div>
+          <div class="quest-meta streak-line">🔥 Streak: ${streakLabel}</div>
+          ${this.regraStatus(r)}
+          <div class="quest-actions">
+            ${Regras.isFulfilledNow(r)
+              ? ''
+              : `<button class="btn btn-success" data-action="regra-fulfill" data-id="${r.id}">✓ CUMPRIR</button>`}
+            <button class="btn" data-action="regra-edit" data-id="${r.id}">✎ EDITAR</button>
+            <button class="btn btn-danger" data-action="regra-delete" data-id="${r.id}">🗑 EXCLUIR</button>
+          </div>
+        </div>
+      </div>`;
   },
 });

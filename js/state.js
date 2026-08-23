@@ -18,7 +18,44 @@ const Game = {
 
   load() {
     this.state = Storage.load();
+    if (this.state) this.normalize();
     return this.state;
+  },
+
+  /**
+   * Garante que TODOS os campos esperados existam, independente da idade
+   * do save. Assim nenhuma tela quebra por propriedade ausente.
+   */
+  normalize() {
+    const s = this.state;
+    s.player ??= {};
+    s.player.avatarId ??= 'default';
+    s.player.customClass ??= false;
+    s.player.createdCategory ??= false;
+    s.player.level ??= 1;
+    s.player.totalXp ??= 0;
+    s.categories ??= [];
+    s.quests ??= [];
+    s.completions ??= [];
+    s.achievements ??= [];
+
+    s.wallet ??= { gold: 0 };
+    if (!Number.isFinite(s.wallet.gold) || s.wallet.gold < 0) {
+      s.wallet.gold = Math.max(0, Math.floor(Number(s.wallet.gold) || 0));
+    }
+
+    s.inventory ??= {};
+    s.inventory.owned ??= [];
+    s.inventory.equipped = {
+      avatar: null, head: null, body: null,
+      accessory: null, background: null,
+      ...s.inventory.equipped,
+    };
+    // equipamentos que não correspondem a itens conhecidos são limpos
+    for (const slot of Object.keys(s.inventory.equipped)) {
+      const id = s.inventory.equipped[slot];
+      if (id && !Shop.get(id)) s.inventory.equipped[slot] = null;
+    }
   },
 
   save() {

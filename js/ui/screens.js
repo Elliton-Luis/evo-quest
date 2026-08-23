@@ -67,16 +67,29 @@ const Screens = {
 
   navigate(screen) {
     this.currentScreen = screen;
-    switch (screen) {
-      case 'home':     this.home(); break;
-      case 'quests':   this.quests(); break;
-      case 'attrs':    this.attributes(); break;
-      case 'achv':     this.achievements(); break;
-      case 'char':     this.character(); break;
-      case 'welcome':  this.welcome(); break;
-      case 'creation': this.creation(); break;
-      case 'shop':     this.shop(); break;
-      case 'inventory': this.inventory(); break;
+    try {
+      switch (screen) {
+        case 'home':     this.home(); break;
+        case 'quests':   this.quests(); break;
+        case 'attrs':    this.attributes(); break;
+        case 'achv':     this.achievements(); break;
+        case 'char':     this.character(); break;
+        case 'welcome':  this.welcome(); break;
+        case 'creation': this.creation(); break;
+        case 'shop':     this.shop(); break;
+        case 'inventory': this.inventory(); break;
+      }
+    } catch (e) {
+      // Nunca deixar a aba "morta": exibe o erro em vez de tela vazia.
+      console.error('LifeQuest: falha ao renderizar', screen, e);
+      const reload = `<button class="btn btn-primary btn-block" style="margin-top:12px" onclick="location.reload(true)">RECARREGAR APLICATIVO</button>`;
+      this.el('#screen').innerHTML = `
+        <div class="panel" style="text-align:center">
+          <div class="panel-title">⚠ ALGO DEU ERRADO</div>
+          <p class="hero-sub">Não foi possível abrir esta tela.<br>
+            Seu progresso está salvo — tente recarregar a página.</p>
+          ${reload}
+        </div>`;
     }
     if (screen !== 'creation') this.renderNav();
     window.scrollTo(0, 0);

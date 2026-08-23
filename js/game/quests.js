@@ -42,7 +42,7 @@ const Quests = {
       title: (title || '').trim(),
       description: (description || '').trim(),
       categoryId: categoryId && Categories.get(categoryId) ? categoryId : null,
-      difficulty: DIFFICULTIES[difficulty] ? difficulty : 'normal',
+      difficulty: DIFFICULTIES[difficulty] || difficulty === 'custom' ? difficulty : 'normal',
       xp: Math.max(1, Math.min(99999, Math.floor(Number(xp) || 0))),
       recurrence: RECURRENCES[recurrence] ? recurrence : 'once',
       createdAt: new Date().toISOString(),
@@ -61,7 +61,10 @@ const Quests = {
     if (patch.categoryId !== undefined) {
       q.categoryId = patch.categoryId && Categories.get(patch.categoryId) ? patch.categoryId : null;
     }
-    if (patch.difficulty !== undefined && DIFFICULTIES[patch.difficulty]) q.difficulty = patch.difficulty;
+    if (patch.difficulty !== undefined &&
+        (DIFFICULTIES[patch.difficulty] || patch.difficulty === 'custom')) {
+      q.difficulty = patch.difficulty;
+    }
     if (patch.recurrence !== undefined && RECURRENCES[patch.recurrence]) q.recurrence = patch.recurrence;
     if (patch.xp !== undefined) q.xp = Math.max(1, Math.min(99999, Math.floor(Number(patch.xp) || q.xp)));
     Game.save();
@@ -75,6 +78,14 @@ const Quests = {
   },
 
   /* ---------- conclusões / histórico ---------- */
+
+  /** Gold pago pela missão: sempre pela dificuldade, nunca pelo XP. */
+  goldFor(quest) {
+    if (!quest) return 0;
+    return quest.difficulty === 'custom'
+      ? CUSTOM_QUEST_GOLD
+      : DIFFICULTIES[quest.difficulty]?.gold ?? 0;
+  },
 
   completionsFor(questId) {
     return Game.state.completions.filter(c => c.questId === questId);

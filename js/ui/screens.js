@@ -305,6 +305,8 @@ Object.assign(Screens, {
               <div class="quest-meta">${when}${recLabel}</div>
             </div>
             <div class="quest-xp">+${c.xp} XP</div>
+            <button class="icon-btn" title="Desfazer conclusão"
+                    data-action="quest-undo" data-id="${c.id}">↺</button>
           </div>`;
       }).join('');
 
@@ -334,9 +336,14 @@ Object.assign(Screens, {
         ? `<span class="tag">${this.esc(RECURRENCES[q.recurrence].label)}</span>` : '',
     ].filter(Boolean).join(' ');
 
-    const actions = available
-      ? `<button class="btn btn-success" data-action="quest-complete" data-id="${q.id}">✓ CONCLUIR</button>`
-      : '';
+    const actions = [
+      available
+        ? `<button class="btn btn-success" data-action="quest-complete" data-id="${q.id}">✓ CONCLUIR</button>`
+        : '',
+      !available && last
+        ? `<button class="btn" data-action="quest-undo" data-id="${last.id}">↺ DESFAZER ÚLTIMA</button>`
+        : '',
+    ].join('');
 
     return `
       <div class="quest-item">
@@ -352,7 +359,7 @@ Object.assign(Screens, {
             <button class="btn btn-danger" data-action="quest-delete" data-id="${q.id}">🗑 EXCLUIR</button>
           </div>
         </div>
-        <div class="quest-xp">+${q.xp} XP</div>
+        <div class="quest-xp">+${q.xp} XP · 🪙 ${Quests.goldFor(q)}</div>
       </div>`;
   },
 

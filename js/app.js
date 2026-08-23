@@ -69,6 +69,15 @@ const App = {
       case 'quest-complete':
         this.completeQuest(btn.dataset.id);
         break;
+      case 'quest-undo': {
+        const prev = Notify.captureStats();
+        const undone = Game.undoCompletion(btn.dataset.id);
+        if (!undone) break;
+        Notify.toast('↺ Conclusão desfeita', true);
+        Screens.refresh();
+        Notify.animateBars(prev);
+        break;
+      }
       case 'quest-edit':
         Modals.quest(Quests.get(btn.dataset.id));
         break;

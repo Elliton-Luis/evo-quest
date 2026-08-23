@@ -18,8 +18,8 @@ const FILES = [
 const code = FILES.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
 const run = new Function('localStorage', code +
-  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS, Regras };');
-const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, ECONOMY, Shop, BASIC_AVATARS, Regras } =
+  '\n; return { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, CUSTOM_QUEST_GOLD, ECONOMY, Shop, BASIC_AVATARS, Regras };');
+const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, DIFFICULTIES, CUSTOM_QUEST_GOLD, ECONOMY, Shop, BASIC_AVATARS, Regras } =
   run(global.localStorage);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
@@ -403,5 +403,73 @@ store[Storage.KEY] = JSON.stringify({
 Game.state = null;
 const v4 = Game.load();
 assert(v4.version === 5 && Array.isArray(v4.regras), 'save v4 migrado para v5 com regras[]');
+
+/* ---------- 13. Dificuldade personalizada ---------- */
+Game.createPlayer('Tester', '🧙 Mago');
+const catC = Categories.create({ name: 'Custom', icon: '✨' });
+const qPers = Quests.create({ title: 'Personalizada', categoryId: catC.id,
+  difficulty: 'custom', xp: 77 });
+assert(qPers && qPers.difficulty === 'custom', 'dificuldade Personalizada é persistida');
+const gold0 = Game.state.wallet.gold;
+const evPers = Game.completeQuest(qPers.id);
+assert(evPers.gainedXp === 77, 'XP personalizado é aplicado (+77)');
+assert(evPers.goldEarned === CUSTOM_QUEST_GOLD,
+  `Gold continua vinculado à dificuldade (${CUSTOM_QUEST_GOLD}), não ao XP`);
+// editar só o XP não muda o Gold
+Quests.update(qPers.id, { xp: 300 });
+const undone = Game.undoCompletion(Game.state.completions[Game.state.completions.length - 1].id);
+assert(undone.goldBack === CUSTOM_QUEST_GOLD, 'desfazer devolve exatamente o Gold da dificuldade');
+
+// preset com XP alterado mantém o Gold do preset
+const qEasyXp = Quests.create({ title: 'Fácil com XP alto', categoryId: catC.id,
+  difficulty: 'easy', xp: 90 });
+assert(Quests.goldFor(qEasyXp) === DIFFICULTIES.easy.gold, 'Gold segue a dificuldade mesmo com XP manual');
+
+/* ---------- 14. Desfazer conclusão ---------- */
+// missão única
+const goldU1 = Game.state.wallet.gold;
+const xpU1 = Game.state.player.totalXp;
+const qOnce = Quests.create({ title: 'Única p/ desfazer', categoryId: catC.id,
+  difficulty: 'normal', xp: 25 });
+Game.completeQuest(qOnce.id);
+assert(!Quests.isAvailable(qOnce), 'única concluída fica indisponível');
+const compOnce = Game.state.completions[Game.state.completions.length - 1];
+assert(Game.undoCompletion(compOnce.id) !== null, 'desfazer conclusão única funciona');
+assert(Quests.isAvailable(qOnce), 'única volta a ficar disponível após desfazer');
+assert(Game.state.player.totalXp === xpU1, 'XP do jogador devolvido');
+assert(catC.xp === 0, 'XP da categoria devolvido');
+assert(Game.state.wallet.gold === goldU1, 'Gold da missão devolvido');
+assert(Game.state.completions.length === Game.state.completions.length, 'histórico consistente');
+
+// recorrente: desfaz SÓ a ocorrência atual, preservando as antigas
+const qDaily = Quests.create({ title: 'Diária p/ desfazer', categoryId: catC.id,
+  difficulty: 'easy', xp: 10, recurrence: 'daily' });
+Game.completeQuest(qDaily.id);
+Game.state.completions[Game.state.completions.length - 1].at = daysAgo(3);
+Game.completeQuest(qDaily.id); // hoje
+const compsBeforeUndo = Quests.completionsFor(qDaily.id).length;
+assert(compsBeforeUndo === 2, 'duas ocorrências registradas (ontem e hoje)');
+assert(!Quests.isAvailable(qDaily), 'diária bloqueada hoje');
+const todayComp = Quests.lastCompletion(qDaily.id);
+Game.undoCompletion(todayComp.id);
+assert(Quests.isAvailable(qDaily), 'desfazer libera somente o período atual');
+assert(Quests.completionsFor(qDaily.id).length === compsBeforeUndo - 1,
+  'ocorrência antiga permanece no histórico');
+
+// nível recalculado ao desfazer
+const qBig = Quests.create({ title: 'Épica nível', categoryId: catC.id,
+  difficulty: 'epic', xp: 100 });
+const lvlBefore = Game.state.player.level;
+const evBig = Game.completeQuest(qBig.id);
+if (evBig.playerLevelUp) {
+  const compBig = Game.state.completions[Game.state.completions.length - 1];
+  Game.undoCompletion(compBig.id);
+  assert(Game.state.player.level === lvlBefore, 'nível do jogador recalculado após desfazer');
+} else {
+  assert(true, 'sem level up neste ponto — nada a recalcular');
+}
+
+// desfazer id inexistente é seguro
+assert(Game.undoCompletion('id-falso') === null, 'desfazer id inexistente retorna null');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

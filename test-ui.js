@@ -7,8 +7,8 @@ const { JSDOM } = require('jsdom');
 const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const FILES = ['storage', 'game/xp', 'game/categories', 'game/quests',
-  'game/achievements', 'game/shop', 'game/regras', 'state', 'ui/notifications',
-  'ui/modals', 'ui/screens', 'app'];
+  'game/achievements', 'game/shop', 'game/regras', 'state', 'ui/icons',
+  'ui/notifications', 'ui/modals', 'ui/screens', 'app'];
 const code = FILES.map(f => fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'))
   .join('\n') + '\n;window.__LQ = { Game, Screens, Quests, Categories, Shop, Regras };';
 
@@ -56,12 +56,39 @@ function newApp(savedState = null) {
     'tela "COMECE SUA AVENTURA" exibida');
   w.document.querySelector('[data-action="cat-new"]').click();
   assert(w.document.getElementById('cat-form'), 'modal de nova categoria aberto pela boas-vindas');
+
+  // seletor de ícones: abrir, filtrar, escolher
+  w.document.querySelector('#cat-icon-btn').click();
+  assert(!w.document.getElementById('icon-picker').classList.contains('hidden'),
+    'seletor de ícones abre ao clicar no ícone atual');
+  assert(w.document.querySelectorAll('#icon-pick-body .pick').length >= 20,
+    'favoritos exibidos por padrão no seletor');
+  const search = w.document.getElementById('icon-search');
+  search.value = 'livro';
+  search.dispatchEvent(new w.Event('input', { bubbles: true }));
+  const found = [...w.document.querySelectorAll('#icon-pick-body .pick')]
+    .some(b => b.dataset.icon === '📚'); // seletor CSS do jsdom falha com emoji (astral)
+  assert(found, 'busca encontra 📚 por palavra-chave');
+  search.value = '';
+  search.dispatchEvent(new w.Event('input', { bubbles: true }));
+  w.document.querySelector('#icon-pick-body [data-action="icon-picker-more"], #icon-more-btn').click();
+  assert(w.document.querySelectorAll('.picker-group').length >= 10,
+    '"Mais" expande o catálogo completo com grupos');
+  const target = [...w.document.querySelectorAll('#icon-pick-body .pick')]
+    .find(b => b.dataset.icon === '🎯');
+  target.click();
+  assert(w.document.getElementById('cat-icon').value === '🎯', 'ícone escolhido vai para o campo');
+  assert(w.document.getElementById('icon-picker').classList.contains('hidden'),
+    'seletor fecha após escolher');
+
   w.document.getElementById('cat-name').value = 'Estudos';
   w.document.getElementById('cat-desc').value = 'Livros e cursos';
   w.document.getElementById('cat-form')
     .dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
   assert(Game.state.categories.length === 1 && Game.state.player.createdCategory === true,
     'categoria criada direto da tela de boas-vindas');
+  assert(Game.state.categories[0].icon === '🎯',
+    'categoria criada com o ícone escolhido no seletor');
   assert(w.document.body.innerHTML.includes('COMECE SUA AVENTURA'),
     'boas-vindas continua mostrando as categorias criadas');
 
@@ -108,10 +135,27 @@ function newApp(savedState = null) {
     w.document.querySelector('[data-action="overlay-close"]').click();
   }
 
-  /* ---------- 7. Aba de histórico ---------- */
+  /* ---------- 7. Aba de histórico + desfazer ---------- */
   w.document.querySelector('[data-action="filter"][data-filter="history"]').click();
   assert(w.document.body.innerHTML.includes('HISTÓRICO (1)'),
     'aba de histórico lista a conclusão registrada');
+
+  // desfazer pela aba de histórico: XP/Gold devolvidos e missão volta a ficar disponível
+  const undoBtn = w.document.querySelector('[data-action="quest-undo"]');
+  assert(!!undoBtn, 'botão de desfazer visível no histórico');
+  undoBtn.click();
+  assert(Game.stats().completedQuests === 0 && Game.state.player.totalXp === 0,
+    'desfazer remove ocorrência e devolve XP');
+  assert(w.__LQ.Quests.isAvailable(quest), 'missão diária disponível novamente após desfazer');
+
+  // recria a conclusão para os testes seguintes
+  w.document.querySelector('[data-action="filter"][data-filter="pending"]').click();
+  w.document.querySelector('[data-action="quest-complete"]').click();
+  await sleep(1900);
+  while (w.document.querySelector('[data-action="overlay-close"]')) {
+    w.document.querySelector('[data-action="overlay-close"]').click();
+  }
+  assert(Game.stats().completedQuests === 1, 'conclusão refeita para seguir os testes');
 
   /* ---------- 8. Regrinhas: criar, cumprir, ver streak ---------- */
   w.document.querySelector('[data-action="nav"][data-screen="regras"]').click();

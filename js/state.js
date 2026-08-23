@@ -166,13 +166,13 @@ const Game = {
     // 2. Recompensas de Gold (missão + bônus de level up e conquistas).
     const catLevelUp = catAfter > catBefore;
     const playerLevelUp = playerAfter > playerBefore;
-    const goldEarned = quest.difficulty === 'custom'
-      ? CUSTOM_QUEST_GOLD
-      : DIFFICULTIES[quest.difficulty].gold;
+    const goldEarned = Quests.goldFor(quest);
     const goldBonus =
       (catLevelUp ? ECONOMY.catLevelUpBonus : 0) +
       (playerLevelUp ? ECONOMY.playerLevelUpBonus : 0) +
       unlocked.length * ECONOMY.achievementBonus;
+
+    this.state.completions[this.state.completions.length - 1].gold = goldEarned;
     this.state.wallet.gold += goldEarned + goldBonus;
 
     this.save();
@@ -187,5 +187,36 @@ const Game = {
       playerLevelUp: playerLevelUp ? { from: playerBefore, to: playerAfter } : null,
       unlocked,
     };
+  },
+
+  /**
+   * Desfaz UMA conclusão (a ocorrência apontada por `completionId`):
+   * remove a ocorrência, devolve o XP da categoria/jogador, recalcula
+   * níveis e desconta o Gold da missão. Bônus de level up/conquista não
+   * são revertidos. Histórico anterior permanece intacto.
+   */
+  undoCompletion(completionId) {
+    const idx = this.state.completions.findIndex(c => c.id === completionId);
+    if (idx === -1) return null;
+    const comp = this.state.completions[idx];
+    const quest = comp.questId ? Quests.get(comp.questId) : null;
+    const category = quest && quest.categoryId ? Categories.get(quest.categoryId) : null;
+
+    if (category && comp.xp > 0) {
+      category.xp = Math.max(0, category.xp - comp.xp);
+    }
+    this.state.player.totalXp = Math.max(0, this.state.player.totalXp - comp.xp);
+    this.state.player.level = Xp.fromTotal(this.state.player.totalXp).level;
+
+    // Gold guardado na conclusão; entradas antigas usam a dificuldade atual.
+    const goldBack = Number.isFinite(comp.gold)
+      ? comp.gold
+      : Quests.goldFor(quest);
+    this.state.wallet.gold = Math.max(0, this.state.wallet.gold - goldBack);
+
+    this.state.completions.splice(idx, 1);
+    this.save();
+
+    return { completion: comp, quest, category, goldBack };
   },
 };

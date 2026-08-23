@@ -13,8 +13,16 @@ const App = {
     document.addEventListener('click', e => this.handleClick(e));
     document.addEventListener('submit', e => this.handleSubmit(e));
     document.addEventListener('change', e => this.handleChange(e));
+    document.addEventListener('input', e => this.handleInput(e));
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') Modals.close();
+      if (e.key !== 'Escape') return;
+      // ESC fecha o seletor de ícones primeiro; só então o modal.
+      const picker = document.getElementById('icon-picker');
+      if (picker && !picker.classList.contains('hidden')) {
+        picker.classList.add('hidden');
+        return;
+      }
+      Modals.close();
     });
 
     if (Game.load()) {
@@ -137,6 +145,38 @@ const App = {
         );
         break;
 
+      /* seletor de ícones */
+      case 'icon-picker-toggle': {
+        const picker = Screens.el('#icon-picker');
+        if (!picker) break;
+        const opening = picker.classList.contains('hidden');
+        picker.classList.toggle('hidden', !opening);
+        if (opening) {
+          Modals.renderIconPickerBody('', false);
+          const search = Screens.el('#icon-search');
+          if (search) search.focus();
+        }
+        break;
+      }
+      case 'icon-picker-more': {
+        const picker = Screens.el('#icon-picker');
+        if (picker) picker.dataset.expanded = '1';
+        Modals.renderIconPickerBody(Screens.el('#icon-search').value, true);
+        break;
+      }
+      case 'icon-pick': {
+        const emoji = btn.dataset.icon;
+        const input = Screens.el('#cat-icon');
+        if (input && emoji) input.value = emoji;
+        const preview = Screens.el('#cat-icon-preview');
+        if (preview && emoji) preview.textContent = emoji;
+        const picker = Screens.el('#icon-picker');
+        if (picker) { picker.classList.add('hidden'); delete picker.dataset.expanded; }
+        const search = Screens.el('#icon-search');
+        if (search) search.value = '';
+        break;
+      }
+
       /* modais / overlays */
       case 'modal-backdrop':
         if (e.target === btn) Modals.close();
@@ -205,6 +245,15 @@ const App = {
     if (t.name === 'del-mode') {
       const field = Screens.el('#reassign-field');
       if (field) field.classList.toggle('hidden', t.value !== 'reassign');
+    }
+  },
+
+  handleInput(e) {
+    // Filtro em tempo real do seletor de ícones
+    if (e.target.id === 'icon-search') {
+      const picker = Screens.el('#icon-picker');
+      const expanded = !!picker && picker.dataset.expanded === '1';
+      Modals.renderIconPickerBody(e.target.value, expanded);
     }
   },
 

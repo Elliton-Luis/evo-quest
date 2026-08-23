@@ -100,14 +100,27 @@ const Modals = {
   /* ---------- categoria (criar/editar) ---------- */
 
   category(cat = null) {
+    const currentIcon = cat ? cat.icon : '⭐';
     this.open(`
       <div class="modal-title">${cat ? 'EDITAR CATEGORIA' : 'NOVA CATEGORIA'}</div>
       <form id="cat-form" data-id="${cat ? cat.id : ''}">
         <div class="form-row">
-          <div class="field" style="flex:0 0 80px">
-            <label for="cat-icon">ÍCONE</label>
-            <input type="text" id="cat-icon" maxlength="4"
-                   value="${cat ? this.esc(cat.icon) : '⭐'}">
+          <div class="field" style="flex:0 0 96px; position:relative">
+            <label for="cat-icon-btn">ÍCONE</label>
+            <button type="button" class="icon-current" id="cat-icon-btn"
+                    data-action="icon-picker-toggle" title="Escolher ícone">
+              <span id="cat-icon-preview">${this.esc(currentIcon)}</span>
+            </button>
+            <input type="hidden" id="cat-icon" value="${this.esc(currentIcon)}">
+            <div id="icon-picker" class="icon-picker hidden">
+              <div class="picker-search">🔍
+                <input type="text" id="icon-search" maxlength="30"
+                       placeholder="Procurar ícone..." autocomplete="off">
+              </div>
+              <div class="picker-body" id="icon-pick-body"></div>
+              <button type="button" class="btn btn-block" id="icon-more-btn"
+                      data-action="icon-picker-more">MAIS</button>
+            </div>
           </div>
           <div class="field">
             <label for="cat-name">NOME</label>
@@ -127,6 +140,42 @@ const Modals = {
           <button type="submit" class="btn btn-primary">${cat ? 'SALVAR' : 'CRIAR'}</button>
         </div>
       </form>`);
+  },
+
+  /* ---------- seletor de ícones ---------- */
+
+  _iconGrid(icons) {
+    return `<div class="picker-grid">${icons.map(emoji =>
+      `<button type="button" class="pick" data-action="icon-pick" data-icon="${emoji}">${emoji}</button>`
+    ).join('')}</div>`;
+  },
+
+  /** Renderiza o corpo do seletor: busca > favoritos > catálogo completo. */
+  renderIconPickerBody(query = '', expanded = false) {
+    const body = document.getElementById('icon-pick-body');
+    const moreBtn = document.getElementById('icon-more-btn');
+    if (!body) return;
+
+    let html;
+    const q = Icons.normalize(query);
+    if (q) {
+      const results = Icons.search(query);
+      html = results.length
+        ? this._iconGrid(results)
+        : '<div class="empty-msg" style="padding:6px">Nada encontrado.</div>';
+      if (moreBtn) moreBtn.classList.add('hidden');
+    } else if (!expanded) {
+      html = this._iconGrid(Icons.favorites);
+      if (moreBtn) moreBtn.classList.remove('hidden');
+    } else {
+      html = Icons.categories.map(group => `
+        <div class="picker-group">
+          <div class="picker-group-label">${this.esc(group.label.toUpperCase())}</div>
+          ${this._iconGrid(group.icons)}
+        </div>`).join('');
+      if (moreBtn) moreBtn.classList.add('hidden');
+    }
+    body.innerHTML = html;
   },
 
   /* ---------- editar personagem ---------- */

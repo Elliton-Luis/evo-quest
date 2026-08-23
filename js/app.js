@@ -23,6 +23,7 @@ const App = {
         return;
       }
       Modals.close();
+      Modals.restoreQuestDraft();
     });
 
     if (Game.load()) {
@@ -80,6 +81,11 @@ const App = {
       }
       case 'quest-edit':
         Modals.quest(Quests.get(btn.dataset.id));
+        break;
+      case 'quest-new-cat':
+        // Guarda o rascunho da missão e abre o modal de categoria existente.
+        Modals.captureQuestForm();
+        Modals.category(null);
         break;
       case 'quest-delete':
         Modals.confirm(
@@ -188,10 +194,14 @@ const App = {
 
       /* modais / overlays */
       case 'modal-backdrop':
-        if (e.target === btn) Modals.close();
+        if (e.target === btn) {
+          Modals.close();
+          Modals.restoreQuestDraft(); // cancelou a categoria: volta à missão
+        }
         break;
       case 'modal-cancel':
         Modals.close();
+        Modals.restoreQuestDraft();
         break;
       case 'confirm-ok': {
         const [kind, id] = btn.dataset.confirm.split(':');
@@ -309,15 +319,19 @@ const App = {
         name: Screens.el('#cat-name').value,
         description: Screens.el('#cat-desc').value,
       };
+      let savedCatId = id || null;
       if (id) {
         Categories.update(id, data);
         Notify.toast('Categoria atualizada');
       } else {
         const cat = Categories.create(data);
         if (!cat) return;
+        savedCatId = cat.id;
         Notify.toast(`Categoria ${cat.icon} criada!`);
       }
       Modals.close();
+      // Criada a partir do modal de missão? Volta para ele com a categoria selecionada.
+      if (Modals.restoreQuestDraft(savedCatId)) return;
       Screens.currentScreen === 'welcome'
         ? Screens.welcome()   // mostra a lista crescendo na tela de boas-vindas
         : Screens.refresh();

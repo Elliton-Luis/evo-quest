@@ -37,6 +37,39 @@ const Modals = {
 
   /* ---------- missão (criar/editar) ---------- */
 
+  /* Rascunho do formulário de missão enquanto o usuário cria uma
+     categoria por dentro do modal de missão. Nada é perdido. */
+  _questDraft: null,
+
+  captureQuestForm() {
+    const form = document.getElementById('quest-form');
+    if (!form) return;
+    const rec = form.querySelector('input[name="q-recurrence"]:checked');
+    this._questDraft = {
+      id: form.dataset.id,
+      title: document.getElementById('q-title')?.value ?? '',
+      description: document.getElementById('q-desc')?.value ?? '',
+      categoryId: document.getElementById('q-cat')?.value ?? '',
+      difficulty: document.getElementById('q-difficulty')?.value ?? 'normal',
+      xp: document.getElementById('q-xp')?.value ?? DIFFICULTIES.normal.xp,
+      recurrence: rec ? rec.value : 'once',
+    };
+  },
+
+  /**
+   * Reabre o modal de missão com os dados capturados.
+   * `selectCategoryId` pré-seleciona a categoria recém-criada.
+   * Retorna false se não havia rascunho (fechamento normal).
+   */
+  restoreQuestDraft(selectCategoryId = null) {
+    if (!this._questDraft) return false;
+    const draft = this._questDraft;
+    this._questDraft = null;
+    if (selectCategoryId) draft.categoryId = selectCategoryId;
+    this.quest(draft);
+    return true;
+  },
+
   quest(quest = null) {
     const cats = Categories.all();
     const catOptions =
@@ -45,6 +78,22 @@ const Modals = {
         <option value="${c.id}" ${quest && quest.categoryId === c.id ? 'selected' : ''}>
           ${this.esc(c.icon + ' ' + c.name)}
         </option>`).join('');
+
+    const catField = cats.length
+      ? `<div class="field">
+           <label for="q-cat">CATEGORIA</label>
+           <div style="display:flex; gap:8px">
+             <select id="q-cat" style="flex:1; min-width:0">${catOptions}</select>
+             <button type="button" class="icon-btn" data-action="quest-new-cat"
+                     title="Criar nova categoria" style="font-size:20px">+</button>
+           </div>
+         </div>`
+      : `<div class="field">
+           <label>CATEGORIA</label>
+           <button type="button" class="btn btn-block" data-action="quest-new-cat">
+             + CRIAR CATEGORIA
+           </button>
+         </div>`;
 
     const diffOptions = Object.entries(DIFFICULTIES)
       .map(([id, d]) => `<option value="${id}" ${quest && quest.difficulty === id ? 'selected' : ''}>
@@ -71,10 +120,7 @@ const Modals = {
           <label for="q-desc">DESCRIÇÃO (OPCIONAL)</label>
           <textarea id="q-desc" maxlength="200">${quest ? this.esc(quest.description) : ''}</textarea>
         </div>
-        <div class="field">
-          <label for="q-cat">CATEGORIA</label>
-          <select id="q-cat">${catOptions}</select>
-        </div>
+        ${catField}
         <div class="form-row">
           <div class="field">
             <label for="q-difficulty">DIFICULDADE</label>

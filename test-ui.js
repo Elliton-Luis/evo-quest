@@ -99,6 +99,30 @@ function newApp(savedState = null) {
   /* ---------- 5. Criar missão com dificuldade e recorrência ---------- */
   w.document.querySelector('[data-action="new-quest"]').click();
   assert(w.document.getElementById('quest-form'), 'modal de nova missão aberto');
+
+  /* criar categoria sem sair do modal de missão */
+  w.document.getElementById('q-title').value = 'Rascunho preservado';
+  w.document.querySelector('[data-action="quest-new-cat"]').click();
+  assert(w.document.getElementById('cat-form'),
+    'modal de categoria abre a partir do modal de missão');
+  w.document.getElementById('cat-name').value = 'Feito no modal';
+  w.document.getElementById('cat-form')
+    .dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+  const backForm = w.document.getElementById('quest-form');
+  assert(!!backForm, 'salvar categoria retorna ao modal de missão');
+  assert(backForm.querySelector('#q-title').value === 'Rascunho preservado',
+    'dados já preenchidos da missão não são perdidos');
+  const selOpt = backForm.querySelector('#q-cat').selectedOptions[0];
+  assert(selOpt && selOpt.textContent.includes('Feito no modal'),
+    'categoria recém-criada fica selecionada automaticamente');
+
+  // cancelar criação de outra categoria também retorna com os dados
+  w.document.querySelector('[data-action="quest-new-cat"]').click();
+  w.document.querySelector('[data-action="modal-cancel"]').click();
+  assert(w.document.getElementById('quest-form') &&
+    w.document.getElementById('q-title').value === 'Rascunho preservado',
+    'cancelar a categoria volta ao modal da missão com o rascunho');
+
   // selecionar dificuldade "Difícil" preenche o XP automaticamente
   const diff = w.document.getElementById('q-difficulty');
   diff.value = 'hard';

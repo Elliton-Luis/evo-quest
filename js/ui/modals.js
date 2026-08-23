@@ -129,6 +129,43 @@ const Modals = {
       </form>`);
   },
 
+  /* ---------- editar personagem ---------- */
+
+  character(player) {
+    const avatarOptions = BASIC_AVATARS.map(a => `
+      <label>
+        <input type="radio" name="char-avatar" value="${a.id}"
+               ${(player.avatarId || 'default') === a.id ? 'checked' : ''}>
+        <span class="choice-pill choice-avatar">${a.icon}</span>
+      </label>`).join('');
+
+    this.open(`
+      <div class="modal-title">EDITAR PERSONAGEM</div>
+      <form id="edit-char-form">
+        <div class="field">
+          <label for="ec-name">NOME</label>
+          <input type="text" id="ec-name" maxlength="24" required
+                 value="${this.esc(player.name)}">
+        </div>
+        <div class="field">
+          <label for="ec-class">CLASSE</label>
+          <input type="text" id="ec-class" maxlength="24" required
+                 value="${this.esc(player.class)}" placeholder="Ex.: Aventureiro, Monge...">
+        </div>
+        <div class="field">
+          <label>AVATAR</label>
+          <div class="choice-group">${avatarOptions}</div>
+        </div>
+        <p class="hero-sub" style="font-size:16px">
+          XP, nível, missões e conquistas refletem seu progresso e não podem ser editados.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-action="modal-cancel">CANCELAR</button>
+          <button type="submit" class="btn btn-primary">SALVAR</button>
+        </div>
+      </form>`);
+  },
+
   /**
    * Exclusão de categoria — NUNCA apaga missões silenciosamente.
    * O usuário escolhe: manter sem categoria ou reatribuir.

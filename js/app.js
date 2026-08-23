@@ -109,6 +109,15 @@ const App = {
         break;
 
       /* personagem */
+      case 'edit-char':
+        Modals.character(Game.state.player);
+        break;
+      case 'open-shop':
+        Screens.navigate('shop');
+        break;
+      case 'open-inventory':
+        Screens.navigate('inventory');
+        break;
       case 'reset-game':
         Modals.confirm(
           'REINICIAR AVENTURA',
@@ -158,6 +167,20 @@ const App = {
       if (!name) return;
       Game.createPlayer(name, klass, isCustom);
       Screens.navigate('welcome'); // 0 categorias: convida a criar atributos
+      return;
+    }
+
+    /* editar personagem (nome, classe, avatar — nunca progresso) */
+    if (form.id === 'edit-char-form') {
+      e.preventDefault();
+      const name = Screens.el('#ec-name').value.trim();
+      const klass = Screens.el('#ec-class').value.trim();
+      if (!name || !klass) return;
+      const av = form.querySelector('input[name="char-avatar"]:checked');
+      Game.updatePlayer({ name, class: klass, avatarId: av ? av.value : 'default' });
+      Modals.close();
+      Notify.toast('Personagem atualizado');
+      Screens.refresh();
       return;
     }
 
@@ -256,11 +279,13 @@ const App = {
     Notify.showCompleteEvents(ev, overlayDelay);
   },
 
-  /** Verifica conquistas pendentes e notifica em fila. */
+  /** Verifica conquistas pendentes e notifica em fila (+bônus de Gold). */
   flushAchievements() {
     const newly = Achievements.check(Game.state);
     if (!newly.length) return;
+    Game.state.wallet.gold += newly.length * ACHIEVEMENT_GOLD_BONUS;
     Game.save();
+    Notify.toast(`🏆 +${newly.length * ACHIEVEMENT_GOLD_BONUS} Gold`, true);
     for (const def of newly) {
       Notify.pushOverlay({
         type: 'achieve',

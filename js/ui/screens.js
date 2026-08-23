@@ -411,25 +411,57 @@ Object.assign(Screens, {
     const st = Game.stats();
     const p = Game.state.player;
 
+    const statLine = (label, value) => `
+      <div class="stats-line"><span>${label}</span><b>${value}</b></div>`;
+
+    const equipRow = (slot, fallbackLabel) => {
+      const item = Shop.equippedIn(slot);
+      return `
+        <div class="stats-line">
+          <span>${fallbackLabel}</span>
+          <b>${item ? this.esc(item.icon + ' ' + item.name) : '—'}</b>
+        </div>`;
+    };
+
     this.el('#screen').innerHTML = `
       <div class="panel" style="text-align:center">
-        <div style="font-size:56px">🧙</div>
+        <div class="panel-title">PERSONAGEM</div>
+        <div style="font-size:56px">${Shop.avatarIcon()}</div>
         <div class="hero-name" style="font-size:24px">${this.esc(p.name)}</div>
         <div class="hero-sub">${this.esc(p.class)}${p.customClass ? ' · personalizada' : ''}</div>
-        <hr class="divider-dash">
-        <div class="stats-line"><span>Nível geral</span><b>${st.playerLevel}</b></div>
-        <div class="stats-line" style="border-top:none;padding-top:0"><span>XP total</span><b>${this.fmt(st.totalXp)}</b></div>
-        <div class="stats-line" style="border-top:none;padding-top:0"><span>Missões concluídas</span><b>${this.fmt(st.completedQuests)}</b></div>
-        <div class="stats-line" style="border-top:none;padding-top:0"><span>Atributos criados</span><b>${st.categoriesCount}</b></div>
-        <div class="stats-line" style="border-top:none;padding-top:0"><span>Missões cadastradas</span><b>${st.questsCount}</b></div>
-        <div class="stats-line" style="border-top:none;padding-top:0">
-          <span>Conquistas</span><b>${st.unlockedCount}/${st.achievementsTotal}</b>
+        <div class="stat-big" style="margin-top:8px">NÍVEL ${st.playerLevel}</div>
+        <div style="max-width:280px; margin:6px auto 0">
+          ${this.bar(st.playerProgress.current, st.playerProgress.needed, 'gold', 'player')}
+          <div class="xp-label"><span>XP TOTAL</span><span>${this.fmt(st.totalXp)}</span></div>
         </div>
+        <div class="hero-sub" style="color:var(--gold); margin-top:4px">🪙 ${this.fmt(Shop.gold())} Gold</div>
       </div>
 
       <div class="panel">
-        <div class="panel-title">ZONA DE PERIGO</div>
-        <p class="hero-sub" style="margin-bottom:12px">
+        <div class="panel-title">ESTATÍSTICAS</div>
+        ${statLine('Nível geral', st.playerLevel)}
+        ${statLine('XP total', this.fmt(st.totalXp))}
+        ${statLine('Missões concluídas', this.fmt(st.completedQuests))}
+        ${statLine('Atributos criados', st.categoriesCount)}
+        ${statLine('Conquistas', `${st.unlockedCount}/${st.achievementsTotal}`)}
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">EQUIPAMENTO</div>
+        ${equipRow('head', 'Cabeça')}
+        ${equipRow('body', 'Corpo')}
+        ${equipRow('accessory', 'Acessório')}
+        ${equipRow('background', 'Fundo')}
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:8px">
+        <button class="btn btn-block" data-action="edit-char">✎ EDITAR PERSONAGEM</button>
+        <button class="btn btn-block" data-action="open-inventory">🎒 INVENTÁRIO</button>
+        <button class="btn btn-primary btn-block" data-action="open-shop">🛒 LOJA</button>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
+        <p class="hero-sub" style="margin-bottom:10px; font-size:16px">
           Reiniciar apaga TODO o progresso salvo neste navegador.
         </p>
         <button class="btn btn-danger btn-block" data-action="reset-game">REINICIAR AVENTURA</button>

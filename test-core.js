@@ -181,7 +181,7 @@ assert(Achievements.isUnlocked(Game.state, 'living_legend'), 'Lenda Viva com tod
 Game.save();
 Game.state = null;
 const reloaded = Game.load();
-assert(reloaded.version === 3, 'save persistido na versão 3');
+assert(reloaded.version === 4, 'save persistido na versão atual');
 assert(reloaded.player.totalXp > 0 && reloaded.completions.length > 0, 'progresso preservado ao reabrir');
 
 store[Storage.KEY] = JSON.stringify({
@@ -195,7 +195,7 @@ store[Storage.KEY] = JSON.stringify({
 });
 Game.state = null;
 const mig = Game.load();
-assert(mig.version === 3, 'save v2 migrado para v3');
+assert(mig.version === 4, 'save v2 migrado para a versão atual');
 assert(mig.quests[0].title === 'Velha' && mig.quests[0].description === 'x' &&
        typeof mig.quests[0].done === 'undefined', 'missão migrada para title/description, done removido');
 assert(mig.quests[0].difficulty === 'hard' && mig.quests[0].recurrence === 'once',
@@ -215,6 +215,6 @@ store[Storage.KEY] = JSON.stringify({
 });
 Game.state = null;
 const v1 = Game.load();
-assert(v1.version === 3 && Array.isArray(v1.completions), 'save v1 também é migrado direto para v3');
+assert(v1.version === 4 && Array.isArray(v1.completions), 'save v1 também é migrado direto para a versão atual');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

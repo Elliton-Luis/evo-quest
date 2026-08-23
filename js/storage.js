@@ -6,7 +6,7 @@
 
 const Storage = {
   KEY: 'lifequest_save_v1',
-  VERSION: 3,
+  VERSION: 4,
 
   save(state) {
     try {
@@ -106,6 +106,24 @@ const Storage = {
       state.completions = completions;
       delete p.completedCount;
       state.version = 3;
+    }
+
+    // v3 → v4: avatar do personagem, carteira de Gold e inventário cosmético.
+    if (state.version < 4) {
+      const p = state.player;
+      p.avatarId ??= 'default';
+      state.wallet ??= { gold: 0 };
+      state.inventory ??= {
+        owned: [],
+        equipped: {
+          avatar: null,
+          head: null,
+          body: null,
+          accessory: null,
+          background: null,
+        },
+      };
+      state.version = 4;
     }
 
     return state;

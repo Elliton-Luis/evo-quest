@@ -1,5 +1,6 @@
 node_modules/
 .env
-.ai-jail
-commit_pattern.md
 commit_pattern_pt.md
+commit_pattern.md
+.ai-jail
+

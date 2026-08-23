@@ -38,6 +38,12 @@ A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de 
 - [x] Exclusão de categoria nunca apaga missões: manter sem categoria ou reatribuir;
 - [x] Missões com título, descrição, categoria, dificuldade e frequência;
 - [x] Dificuldades Fácil / Normal / Difícil / Épica preenchem o XP automaticamente (10/25/50/100), com XP personalizável;
+- [x] Perfil do personagem com avatar, estatísticas derivadas e edição (nome/classe/avatar);
+- [x] Avatares básicos escolhíveis + avatares cosméticos na loja;
+- [x] **Gold**: moeda ganha por missão (5–40, conforme dificuldade) com bônus de level up e conquista;
+- [x] 🛒 Loja exclusivamente cosmética: avatares, cabeça, corpo, acessórios e fundos;
+- [x] Itens data-driven com raridade visual (comum → lendário) e itens desbloqueados por conquista;
+- [x] Inventário com equipar/desequipar; economia à prova de duplicação;
 - [x] Missões únicas, diárias, semanais ou mensais — sem duplicar registros no save;
 - [x] Histórico de conclusões separado da definição das missões;
 - [x] Sistema de XP por atributo e nível geral do personagem;
@@ -111,6 +117,29 @@ O XP histórico nunca é apagado; a barra mostra apenas o progresso dentro do n�
 
 ---
 
+## 🪙 Gold e Loja
+
+Completar missões rende **Gold**, conforme a dificuldade:
+
+| Dificuldade | Gold |
+|---|---|
+| Fácil | 5 |
+| Normal | 10 |
+| Difícil | 20 |
+| Épica | 40 |
+
+Bônus: level up de categoria (+25), level up geral (+50) e conquista desbloqueada (+15). Nada é duplicado: a conclusão é registrada no histórico antes das recompensas, então recarregar a página ou reconcluir uma missão nunca gera Gold extra.
+
+A **🛒 Loja** é exclusivamente cosmética — avatares, cabeça, corpo, acessórios e fundos. Itens são definidos por dados (`SHOP_ITEMS` em `js/game/shop.js`) com raridade visual:
+
+```text
+Comum 50 · Incomum 100 · Raro 250 · Épico 500 · Lendário 1000
+```
+
+Alguns itens não se compram: são desbloqueados por conquistas e aparecem como 🔒 BLOQUEADO até que o requisito seja cumprido. O inventário permite equipar e desequipar; nada disso afeta XP ou gameplay.
+
+---
+
 ## 🏆 Conquistas
 
 32 conquistas desbloqueadas automaticamente, todas declarativas (`ACHIEVEMENT_DEFS` em `js/game/achievements.js`) — adicionar uma nova é acrescentar uma entrada com uma condição:
@@ -164,7 +193,8 @@ lifequest/
 │   │   ├── xp.js           # fórmulas de XP/nível (funções puras)
 │   │   ├── categories.js   # CRUD de categorias (exclusão nunca apaga missões)
 │   │   ├── quests.js       # dificuldades, recorrência, disponibilidade
-│   │   └── achievements.js # conquistas data-driven
+│   │   ├── achievements.js # conquistas data-driven
+│   │   └── shop.js         # itens cosméticos, raridades, compra/equip
 │   └── ui/
 │       ├── screens.js      # renderização das telas
 │       ├── modals.js       # modais (missão, categoria, exclusão segura)
@@ -177,16 +207,18 @@ O estado é um único objeto serializável — contadores deriváveis não são 
 
 ```javascript
 {
-    version: 3,
-    player: { name, class, customClass, createdCategory, level, totalXp },
+    version: 4,
+    player: { name, class, customClass, avatarId, createdCategory, level, totalXp },
     categories: [{ id, icon, name, description, xp, createdAt }],
     quests: [{ id, title, description, categoryId, difficulty, xp, recurrence, createdAt }],
     completions: [{ id, questId, recurrence, xp, at }],  // fonte da verdade do histórico
-    achievements: [{ id, unlockedAt }]
+    achievements: [{ id, unlockedAt }],
+    wallet: { gold },
+    inventory: { owned: [], equipped: { avatar, head, body, accessory, background } }
 }
 ```
 
-Saves antigos (v1/v2) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
+Saves antigos (v1/v2/v3) são **migrados automaticamente** ao carregar (`Storage.migrate`): missões ganham os novos campos, o histórico é reconstruído e nenhum progresso é perdido.
 
 Para rodar os testes da lógica:
 
@@ -245,8 +277,8 @@ Ideias para o futuro — nada disso existe ainda:
 
 ### 🚧 Próximos passos
 
-- [ ] Avatar personalizável;
-- [ ] Equipamentos e inventário;
+- [ ] Sprites/imagens no lugar dos avatares emoji;
+- [ ] Mais itens cosméticos e efeitos visuais de fundo;
 - [ ] Streaks diários;
 - [ ] Estatísticas e gráficos de evolução;
 - [ ] Bosses e desafios;

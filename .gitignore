@@ -1,1 +1,8 @@
 .ai-jail
+
+# Ignorado automaticamente pelo Synapse CLI
+commit_pattern.md
+commit_pattern_pt.md
+.env
+node_modules/
+

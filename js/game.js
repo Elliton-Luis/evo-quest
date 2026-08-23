@@ -101,6 +101,109 @@ const ACHIEVEMENT_DEFS = [
     check: s =>
       s.categories.filter(c => statsFromTotalXp(c.xp).level >= 5).length >= 4,
   },
+  {
+    id: 'centurion',
+    icon: '⚔️',
+    name: 'Centurião',
+    desc: 'Complete 250 missões.',
+    check: s => s.player.completedCount >= 250,
+  },
+  {
+    id: 'tireless',
+    icon: '💯',
+    name: 'Incansável',
+    desc: 'Complete 500 missões.',
+    check: s => s.player.completedCount >= 500,
+  },
+  {
+    id: 'first_master',
+    icon: '🌟',
+    name: 'Primeiro Mestre',
+    desc: 'Alcance o nível 10 em qualquer categoria.',
+    check: s => s.categories.some(c => statsFromTotalXp(c.xp).level >= 10),
+  },
+  {
+    id: 'knowledge_master',
+    icon: '🧠',
+    name: 'Mestre do Conhecimento',
+    desc: 'Alcance o nível 10 em duas categorias diferentes.',
+    check: s =>
+      s.categories.filter(c => statsFromTotalXp(c.xp).level >= 10).length >= 2,
+  },
+  {
+    id: 'generalist',
+    icon: '🌐',
+    name: 'Generalista',
+    desc: 'Tenha pelo menos 5 categorias criadas.',
+    check: s => s.categories.length >= 5,
+  },
+  {
+    id: 'xp_hoarder',
+    icon: '💰',
+    name: 'Acumulador de XP',
+    desc: 'Acumule 1.000 XP total.',
+    check: s => s.player.totalXp >= 1000,
+  },
+  {
+    id: 'xp_treasure',
+    icon: '💎',
+    name: 'Tesouro de XP',
+    desc: 'Acumule 5.000 XP total.',
+    check: s => s.player.totalXp >= 5000,
+  },
+  {
+    id: 'adventure_lord',
+    icon: '👑',
+    name: 'Senhor da Aventura',
+    desc: 'Alcance o nível geral 10.',
+    check: s => statsFromTotalXp(s.player.totalXp).level >= 10,
+  },
+  {
+    id: 'war_veteran',
+    icon: '🎖️',
+    name: 'Veterano de Guerra',
+    desc: 'Complete missões em pelo menos 4 categorias diferentes.',
+    check: s =>
+      s.categories.filter(c => c.completedCount > 0).length >= 4,
+  },
+  {
+    id: 'explorer',
+    icon: '🧭',
+    name: 'Explorador',
+    desc: 'Crie sua primeira categoria personalizada.',
+    check: s => !!s.player.createdCustomCategory,
+  },
+  {
+    id: 'own_identity',
+    icon: '🎭',
+    name: 'Identidade Própria',
+    desc: 'Defina uma classe personalizada.',
+    check: s => !!s.player.customClass,
+  },
+  {
+    id: 'collector',
+    icon: '🏆',
+    name: 'Colecionador',
+    desc: 'Desbloqueie 10 conquistas.',
+    check: s => s.achievements.length >= 10,
+  },
+  {
+    id: 'achievement_hunter',
+    icon: '🏅',
+    name: 'Caçador de Conquistas',
+    desc: 'Desbloqueie 20 conquistas.',
+    check: s => s.achievements.length >= 20,
+  },
+  {
+    id: 'living_legend',
+    icon: '🌠',
+    name: 'Lenda Viva',
+    desc: 'Desbloqueie todas as outras conquistas.',
+    check: s =>
+      ACHIEVEMENT_DEFS.every(
+        d => d.id === 'living_legend' || s.achievements.some(a => a.id === d.id)
+      ),
+  },
 ];
 
 const DEFAULT_CATEGORIES = [
@@ -150,11 +253,13 @@ const Game = {
 
   /* ----- criação / personagem ----- */
 
-  createPlayer(name, className) {
+  createPlayer(name, className, isCustomClass = false) {
     this.state = {
       player: {
         name: name.trim() || 'Aventureiro',
         class: className,
+        customClass: !!isCustomClass,
+        createdCustomCategory: false,
         level: 1,
         totalXp: 0,
         completedCount: 0,
@@ -164,6 +269,7 @@ const Game = {
         id: this.uid(),
         icon: c.icon,
         name: c.name,
+        desc: '',
         xp: 0,
         completedCount: 0,
       })),
@@ -198,17 +304,30 @@ const Game = {
 
   /* ----- categorias ----- */
 
-  createCategory(name, icon) {
+  createCategory(name, icon, desc = '') {
     const cleanName = name.trim();
     if (!cleanName) return null;
     const cat = {
       id: this.uid(),
       icon: icon.trim() || '⭐',
       name: cleanName,
+      desc: (desc || '').trim(),
       xp: 0,
       completedCount: 0,
     };
     this.state.categories.push(cat);
+    this.state.player.createdCustomCategory = true;
+    this.save();
+    return cat;
+  },
+
+  /** Renomear/trocar ícone NÃO mexe em XP nem nas missões vinculadas. */
+  updateCategory(id, patch) {
+    const cat = this.getCategory(id);
+    if (!cat) return null;
+    if (patch.name !== undefined) cat.name = String(patch.name).trim() || cat.name;
+    if (patch.icon !== undefined) cat.icon = String(patch.icon).trim() || cat.icon;
+    if (patch.desc !== undefined) cat.desc = String(patch.desc).trim();
     this.save();
     return cat;
   },

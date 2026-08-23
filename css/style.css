@@ -608,3 +608,105 @@ select { appearance: none; }
   border-top: 2px dashed var(--border);
   margin: 12px 0;
 }
+
+/* ============ Animações e microinterações (2ª etapa) ============ */
+
+/* Hover discreto em botões e abas */
+.btn, .tab, .icon-btn {
+  transition: filter .15s ease;
+}
+.btn:hover, .tab:hover { filter: brightness(1.18); }
+
+/* Conclusão de missão: flash no cartão */
+.quest-item { position: relative; }
+
+.done-flash { animation: done-flash .6s ease-out; }
+
+@keyframes done-flash {
+  0%   { background: rgba(127, 224, 127, .16); }
+  100% { background: transparent; }
+}
+
+/* Checkbox "pula" ao concluir */
+.pop { animation: pop-check .3s cubic-bezier(.2, 1.8, .4, 1); }
+
+@keyframes pop-check {
+  0%   { transform: scale(.6); }
+  60%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
+/* +XP flutuando e desaparecendo sobre o cartão */
+.float-xp {
+  position: absolute;
+  right: 10px;
+  top: 4px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--green);
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  animation: float-up .9s ease-out forwards;
+}
+
+@keyframes float-up {
+  0%   { opacity: 0; transform: translateY(6px); }
+  20%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-26px); }
+}
+
+/* Barra de XP pulsando durante o level up */
+.bar-fill.flash {
+  animation: bar-flash .28s steps(2) infinite alternate;
+}
+
+@keyframes bar-flash {
+  from { box-shadow: inset 0 0 0 2px rgba(255, 215, 94, 0); }
+  to   { box-shadow: inset 0 0 0 3px var(--gold), 0 0 8px rgba(255, 215, 94, .55); }
+}
+
+/* Overlay de conquista/level up: ícone com entrada elástica */
+.overlay-box .overlay-icon {
+  animation: icon-bounce .5s cubic-bezier(.2, 1.8, .4, 1) .1s backwards;
+}
+
+@keyframes icon-bounce {
+  0%   { transform: scale(0) rotate(-14deg); }
+  70%  { transform: scale(1.25) rotate(4deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* Brilho que atravessa o painel do overlay uma única vez */
+.overlay-box {
+  position: relative;
+  overflow: hidden;
+}
+.overlay-box::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(105deg,
+    transparent 0%, rgba(255, 255, 255, .09) 45%,
+    rgba(255, 255, 255, .16) 50%, rgba(255, 255, 255, .09) 55%,
+    transparent 100%);
+  pointer-events: none;
+  animation: shine-sweep 1s ease-out .35s 1 both;
+}
+
+@keyframes shine-sweep {
+  to { left: 130%; }
+}
+
+/* Acessibilidade: reduzir movimento quando o sistema pedir */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+  .overlay-kicker { animation: none !important; }
+  .intro-logo { animation: none !important; }
+}

@@ -16,8 +16,9 @@ const code =
   fs.readFileSync(path.join(dir, 'js/game.js'), 'utf8');
 
 // Executa no escopo global (sem 'strict' isolado pelo eval)
-const run = new Function('localStorage', code + '\n; return { Storage, Game, statsFromTotalXp };');
-const { Game, statsFromTotalXp } = run(global.localStorage);
+const run = new Function('localStorage', code +
+  '\n; return { Storage, Game, ACHIEVEMENT_DEFS, statsFromTotalXp };');
+const { Storage, Game, ACHIEVEMENT_DEFS, statsFromTotalXp } = run(global.localStorage);
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
 
@@ -93,5 +94,71 @@ assert(xpForNextSafe(1) === 150 && xpForNextSafe(2) === 200 && xpForNextSafe(9) 
   'fórmula de XP correta');
 
 function xpForNextSafe(l) { return 100 + l * 50; }
+
+// 9. Edição de categoria preserva XP e missões
+const catProg = Game.state.categories[0];
+const progQuests = Game.state.quests.filter(q => q.categoryId === catProg.id).length;
+const progXp = catProg.xp;
+Game.updateCategory(catProg.id, { name: 'Desenvolvimento', icon: '🛠️', desc: 'Código' });
+const renamed = Game.getCategory(catProg.id);
+assert(renamed.name === 'Desenvolvimento' && renamed.icon === '🛠️' && renamed.desc === 'Código',
+  'categoria renomeada com ícone e descrição');
+assert(renamed.xp === progXp &&
+  Game.state.quests.filter(q => q.categoryId === catProg.id).length === progQuests,
+  'edição preserva XP e vínculo das missões');
+
+// 10. Classe personalizada marca flag (conquista Identidade Própria)
+Game.updatePlayer({ class: 'Cavaleiro do Código', customClass: true });
+const newlyIdentity = Game.checkAchievements();
+assert(newlyIdentity.some(d => d.id === 'own_identity'), 'Identidade Própria desbloqueada');
+
+// 11. Nova categoria dispara Explorador/Generalista
+Game.createCategory('Música', '🎸');
+Game.checkAchievements();
+assert(Game.isUnlocked('explorer'), 'Explorador desbloqueada');
+assert(Game.isUnlocked('generalist'), 'Generalista desbloqueada');
+
+// 12. Conquistas de XP/nível gerais
+Game.state.player.totalXp = 5000;
+Game.state.player.level = statsFromTotalXp(5000).level;
+const newlyXp = Game.checkAchievements();
+assert(newlyXp.some(d => d.id === 'xp_hoarder') && newlyXp.some(d => d.id === 'xp_treasure'),
+  'Acumulador e Tesouro de XP desbloqueadas');
+assert(newlyXp.some(d => d.id === 'adventure_lord'), 'Senhor da Aventura no nível geral 10');
+
+// 13. Veterano de Guerra: missões em 4 categorias diferentes
+for (let i = 1; i < 4; i++) {
+  const c = Game.state.categories[i];
+  if (c.completedCount === 0) c.completedCount = 3;
+}
+const newlyWar = Game.checkAchievements();
+assert(newlyWar.some(d => d.id === 'war_veteran'), 'Veterano de Guerra desbloqueada');
+
+// 14. Lenda Viva só com todas as outras
+const othersUnlocked = ACHIEVEMENT_DEFS
+  .filter(d => d.id !== 'living_legend')
+  .every(d => Game.isUnlocked(d.id));
+if (othersUnlocked) {
+  const finalCheck = Game.checkAchievements();
+  assert(finalCheck.some(d => d.id === 'living_legend'), 'Lenda Viva com todas desbloqueadas');
+} else {
+  assert(!Game.isUnlocked('living_legend'), 'Lenda Viva bloqueada sem as demais');
+}
+
+// 15. Migração v1 → v2: save antigo ganha campos novos sem perder nada
+store[Storage.KEY] = JSON.stringify({
+  player: { name: 'Antigo', class: '🧙 Mago', level: 2, totalXp: 200, completedCount: 5 },
+  categories: [{ id: 'c1', icon: '💻', name: 'Programação', xp: 200, completedCount: 5 }],
+  quests: [{ id: 'q1', name: 'Velha', desc: '', categoryId: 'c1', xp: 10, done: true }],
+  achievements: [{ id: 'first_step', unlockedAt: '2024-01-01T00:00:00Z' }],
+});
+Game.state = null;
+const migrated = Game.load();
+assert(migrated.version === 2, 'save migrado para versão 2');
+assert(migrated.player.customClass === false &&
+  migrated.player.createdCustomCategory === false, 'flags do player adicionadas');
+assert(migrated.categories[0].desc === '', 'descrição da categoria adicionada');
+assert(migrated.player.totalXp === 200 && migrated.achievements.length === 1,
+  'dados antigos preservados na migração');
 
 console.log('\nTODOS OS TESTES PASSARAM ✔');

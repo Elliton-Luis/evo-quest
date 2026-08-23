@@ -25,34 +25,28 @@ A premissa é simples: listas de tarefas comuns não dão nenhuma sensação de 
 
 ## 🎮 Demonstração
 
-<!-- Screenshots serão adicionados aqui.
-     Sugestões de capturas:
-     - Dashboard (HUD do personagem)
-     - Lista de missões
-     - Atributos detalhados
-     - Conquistas
-     - Overlay de Level Up -->
+![alt text](image.png)
 
-*Sem screenshots no momento — em breve.*
+![alt text](image-1.png)
 
 ---
 
 ## ✨ Funcionalidades
 
-- [x] Criação de personagem (nome e classe);
+- [x] Criação de personagem (nome e classe, com sugestões ou classe totalmente personalizada);
 - [x] Cinco telas: Início, Missões, Atributos, Conquistas e Personagem;
-- [x] Quatro categorias padrão (Programação, Catolicismo, Latim, Organização);
-- [x] Criação e exclusão de categorias personalizadas;
+- [x] Categorias personalizáveis: criar, editar (nome, ícone, descrição) e excluir;
 - [x] Criação, edição e exclusão de missões;
 - [x] Conclusão e reabertura de missões;
 - [x] Sistema de XP por categoria e XP geral do personagem;
 - [x] Sistema de níveis com fórmula previsível;
 - [x] Level Up de atributos e geral, com animações;
-- [x] 8 conquistas desbloqueáveis automaticamente;
+- [x] 22 conquistas desbloqueáveis automaticamente;
 - [x] Histórico de XP total e contadores de missões concluídas;
-- [x] Persistência completa com `localStorage`;
+- [x] Persistência completa com `localStorage`, com migração automática de saves antigos;
 - [x] Interface responsiva (mobile-first, funciona a partir de 320px);
-- [x] Feedback visual: toasts, overlays e animações leves.
+- [x] Feedback visual: toasts, barras de XP animadas, overlays e microinterações;
+- [x] Suporte a `prefers-reduced-motion`.
 
 ---
 
@@ -74,7 +68,7 @@ Level Up
 Desbloquear conquistas
 ```
 
-Cada categoria da vida é um **atributo** com nível próprio. Uma missão pertence a exatamente uma categoria e vale a quantidade de XP que você definir:
+Cada categoria da vida é um **atributo** com nível próprio — e nenhuma delas é fixa: é possível renomear, trocar o ícone, descrever ou remover qualquer categoria sem perder o XP já conquistado. Uma missão pertence a exatamente uma categoria e vale a quantidade de XP que você definir:
 
 ```text
 Missão:
@@ -120,10 +114,24 @@ As conquistas são desbloqueadas automaticamente conforme sua progressão:
 | 🗺️ Aventureiro | Completar 10 missões |
 | 🛡️ Veterano | Completar 50 missões |
 | ⚔️ Herói | Completar 100 missões |
+| ⚔️ Centurião | Completar 250 missões |
+| 💯 Incansável | Completar 500 missões |
 | 👑 Lenda | Completar 1000 missões |
 | ⭐ Primeiro Level Up | Alcançar nível 2 em qualquer categoria |
 | 🔮 Mestre de um Atributo | Alcançar nível 10 em qualquer categoria |
+| 🌟 Primeiro Mestre | Alcançar o nível 10 em qualquer categoria |
+| 🧠 Mestre do Conhecimento | Nível 10 em duas categorias diferentes |
 | 📚 Polímata | Alcançar nível 5 em pelo menos 4 categorias |
+| 🌐 Generalista | Ter pelo menos 5 categorias criadas |
+| 💰 Acumulador de XP | Acumular 1.000 XP total |
+| 💎 Tesouro de XP | Acumular 5.000 XP total |
+| 👑 Senhor da Aventura | Alcançar o nível geral 10 |
+| 🎖️ Veterano de Guerra | Completar missões em 4 categorias diferentes |
+| 🧭 Explorador | Criar a primeira categoria personalizada |
+| 🎭 Identidade Própria | Definir uma classe personalizada |
+| 🏆 Colecionador | Desbloquear 10 conquistas |
+| 🏅 Caçador de Conquistas | Desbloquear 20 conquistas |
+| 🌠 Lenda Viva | Desbloquear todas as outras conquistas |
 
 O sistema foi projetado como uma lista de definições declarativas (`ACHIEVEMENT_DEFS` em `js/game.js`): cada conquista tem nome, ícone, descrição e uma função de verificação — adicionar novas conquistas é questão de acrescentar entradas à lista.
 
@@ -166,24 +174,35 @@ lifequest/
 │   ├── game.js       # regras: XP, níveis, missões, conquistas
 │   ├── ui.js         # renderização das telas, modais e feedbacks
 │   └── app.js        # bootstrap e eventos
-└── test-core.js      # testes headless da lógica do jogo
+├── test-core.js      # testes headless da lógica do jogo
+└── test-ui.js        # smoke test de interface (requer jsdom)
 ```
 
 Todo o estado vive em um único objeto serializável:
 
 ```javascript
 {
-    player: { name, class, level, totalXp, completedCount },
-    categories: [{ id, icon, name, xp, completedCount }],
+    version: 2,
+    player: { name, class, customClass, createdCustomCategory, level, totalXp, completedCount },
+    categories: [{ id, icon, name, desc, xp, completedCount }],
     quests: [{ id, name, desc, categoryId, xp, done }],
     achievements: [{ id, unlockedAt }]
 }
 ```
 
+Saves de versões antigas são **migrados automaticamente** ao carregar (`Storage.migrate` em `js/storage.js`) — nenhum progresso é perdido entre atualizações.
+
 Para rodar os testes da lógica (sem navegador):
 
 ```bash
 node test-core.js
+```
+
+Há também um smoke test de interface com DOM real (`test-ui.js`), que simula o fluxo completo do MVP — criação de personagem, missões, XP e persistência. Ele usa `jsdom` como dependência opcional de desenvolvimento:
+
+```bash
+npm install --no-save jsdom
+node test-ui.js
 ```
 
 ---
@@ -256,9 +275,3 @@ Produtividade costuma ser apresentada como obrigação. O LifeQuest parte do opo
 ## 🤝 Contribuindo
 
 Embora seja um projeto pessoal, sugestões, issues e pull requests são bem-vindos. Se for contribuir, mantenha o espírito do MVP: simplicidade primeiro.
-
----
-
-## 📄 Licença
-
-A licença ainda não foi definida.

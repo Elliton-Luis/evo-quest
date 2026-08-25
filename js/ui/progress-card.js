@@ -147,8 +147,15 @@ const ProgressCard = {
 
     const cx = W / 2;
 
+    /* Título no topo */
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '38px "Press Start 2P", monospace';
+    ctx.fillStyle = C.gold;
+    ctx.fillText('EVOQUEST', cx, 210);
+
     /* Personagem: elemento principal */
-    let y = 400;
+    let y = 420;
     if (d.bgIcon) {
       ctx.globalAlpha = 0.14;
       ctx.font = '340px sans-serif';

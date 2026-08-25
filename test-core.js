@@ -24,6 +24,21 @@ const { Storage, Game, Xp, Categories, Quests, Achievements, ACHIEVEMENT_DEFS, D
 
 function assert(cond, msg) { if (!cond) { console.error('FAIL:', msg); process.exit(1); } console.log('ok:', msg); }
 const sleepless = () => new Date().toISOString();
+
+/* Relógio simulável: permite adiantar dias para testar a recorrência
+   (a lógica usa `new Date()` como "agora", inclusive ao recarregar). */
+const RealDate = Date;
+const DAY_MS = 24 * 60 * 60 * 1000;
+let clockOffsetMs = 0;
+global.Date = class extends RealDate {
+  constructor(...args) {
+    args.length ? super(...args) : super(RealDate.now() + clockOffsetMs);
+  }
+  static now() { return RealDate.now() + clockOffsetMs; }
+};
+/** Adianta o relógio em N dias (simula a virada do dia). */
+const shiftDays = n => { clockOffsetMs += n * DAY_MS; };
+
 const daysAgo = n => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString(); };
 // meio da semana N semanas atrás (semana começa na segunda) — sempre semanas distintas
 const weeksAgo = n => {
@@ -81,28 +96,71 @@ assert(qCustom.difficulty === 'easy' && qCustom.xp === 75, 'XP manual prevalece 
 /* ---------- 5. Recorrência: diária ---------- */
 const daily = Quests.create({ title: 'Estudar 30 minutos', categoryId: prog.id,
   difficulty: 'normal', xp: 25, recurrence: 'daily' });
-assert(Quests.isAvailable(daily), 'diária disponível hoje');
-Game.completeQuest(daily.id);
-assert(!Quests.isAvailable(daily), 'diária bloqueada após concluir hoje');
-// conclusão de ontem não bloqueia hoje
-Quests.get(daily.id); // noop
+assert(Quests.isAvailable(daily) === true, 'diária recém-criada começa disponível');
+const dailyXpBefore = Game.state.player.totalXp;
+const evDaily = Game.completeQuest(daily.id);
+assert(evDaily && Quests.isAvailable(daily) === false,
+  'completion de hoje torna a diária concluída/bloqueada');
+
+// segunda conclusão no MESMO dia é impedida (sem XP/Gold duplicado)
+const goldSameDay = Game.state.wallet.gold;
+const xpSameDay = Game.state.player.totalXp;
+assert(Game.completeQuest(daily.id) === null, 'segunda conclusão no mesmo dia é bloqueada');
+assert(Game.state.player.totalXp === xpSameDay && Game.state.wallet.gold === goldSameDay,
+  'reconclusão no mesmo dia não concede XP nem Gold');
+
+// recarregar a página HOJE mantém o estado concluído (histórico é a fonte da verdade)
+Game.save();
+Game.state = null;
+Game.load();
+const dailyReloaded = Quests.get(daily.id);
+assert(!Quests.isAvailable(dailyReloaded), 'diária continua concluída após reload no mesmo dia');
+assert(Game.completeQuest(dailyReloaded.id) === null,
+  'reload não permite reconcluir nem gerar recompensas de novo');
+
+// conclusão de ONTEM não bloqueia hoje
 const comps = Game.state.completions;
 comps[comps.length - 1].at = daysAgo(1);
-assert(Quests.isAvailable(daily), 'diária volta a ficar disponível em outro dia');
+assert(Quests.isAvailable(Quests.get(daily.id)) === true,
+  'completion de ontem NÃO torna a diária de hoje concluída');
 Game.completeQuest(daily.id); // conclui de novo (hoje)
 assert(!Quests.isAvailable(daily), 'diária bloqueada novamente hoje');
+assert(Quests.completionsFor(daily.id).length === 2,
+  'cada dia concluído gera sua própria ocorrência no histórico');
+
+/* ---------- 5b. Virada do dia COM persistência (save existente) ---------- */
+Game.save();
+shiftDays(1); // agora é "amanhã"
+Game.state = null;
+Game.load();
+const dailyNextDay = Quests.get(daily.id);
+assert(Quests.isAvailable(dailyNextDay) === true,
+  'no dia seguinte a MESMA definição volta a ficar disponível');
+const occBeforeNextDay = Quests.completionsFor(dailyNextDay.id).length;
+const goldBeforeNextDay = Game.state.wallet.gold;
+const evNextDay = Game.completeQuest(dailyNextDay.id);
+assert(evNextDay && evNextDay.gainedXp > 0,
+  'concluir amanhã concede as recompensas normalmente');
+assert(Quests.completionsFor(dailyNextDay.id).length === occBeforeNextDay + 1 &&
+       Game.state.wallet.gold > goldBeforeNextDay,
+  'nova completion registrada no histórico com Gold da dificuldade');
+
+const lastCompletionAt = () => {
+  const c = Game.state.completions;
+  return c[c.length - 1];
+};
 
 /* ---------- 6. Recorrência: semanal e mensal ---------- */
 const weekly = Quests.create({ title: 'Revisar objetivos', recurrence: 'weekly', xp: 25 });
 Game.completeQuest(weekly.id);
 assert(!Quests.isAvailable(weekly), 'semanal bloqueada na mesma semana');
-comps[comps.length - 1].at = daysAgo(8); // semana passada
+lastCompletionAt().at = daysAgo(8); // semana passada
 assert(Quests.isAvailable(weekly), 'semanal disponível em nova semana');
 
 const monthly = Quests.create({ title: 'Balanço do mês', recurrence: 'monthly', xp: 25 });
 Game.completeQuest(monthly.id);
 assert(!Quests.isAvailable(monthly), 'mensal bloqueada no mesmo mês');
-comps[comps.length - 1].at = daysAgo(35);
+lastCompletionAt().at = daysAgo(35);
 assert(Quests.isAvailable(monthly), 'mensal disponível em novo mês');
 
 /* ---------- 7. Exclusão de categoria NUNCA apaga missões ---------- */

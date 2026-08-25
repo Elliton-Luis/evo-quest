@@ -32,6 +32,7 @@ const App = {
       Screens.navigate(Game.state.categories.length === 0 && !Game.state.completions.length
         ? 'welcome' : 'home');
       this.flushAchievements();
+      this.watchDayRollover();
       // Verifica regrinhas quebradas enquanto o app esteve fechado.
       const breaks = Regras.evaluateAll();
       if (breaks.length) {
@@ -41,6 +42,23 @@ const App = {
     } else {
       Screens.navigate('creation');
     }
+  },
+
+  /**
+   * Disponibilidade de missões é derivada do histórico (completions) no
+   * momento do render. Se o app fica aberto durante a virada do dia,
+   * nada mudaria na tela: aqui detectamos a troca de dia e re-renderizamos,
+   * para que diárias voltem a aparecer disponíveis sem recarregar.
+   */
+  watchDayRollover() {
+    if (this._dayWatcher) return;
+    let today = Quests.periodKey(new Date(), 'daily');
+    this._dayWatcher = setInterval(() => {
+      const now = Quests.periodKey(new Date(), 'daily');
+      if (now === today) return;
+      today = now;
+      Screens.refresh();
+    }, 60 * 1000); // checagem leve, 1x por minuto
   },
 
   /* ---------- delegação de eventos ---------- */

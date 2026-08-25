@@ -484,8 +484,9 @@ Object.assign(Screens, {
 
       <div style="display:flex; flex-direction:column; gap:8px">
         <button class="btn btn-block" data-action="edit-char">✎ EDITAR PERSONAGEM</button>
+        <button class="btn btn-primary btn-block" data-action="share-progress">📸 COMPARTILHAR PROGRESSO</button>
         <button class="btn btn-block" data-action="open-inventory">🎒 INVENTÁRIO</button>
-        <button class="btn btn-primary btn-block" data-action="open-shop">🛒 LOJA</button>
+        <button class="btn btn-block" data-action="open-shop">🛒 LOJA</button>
       </div>
 
       <div class="panel" style="margin-top:16px">

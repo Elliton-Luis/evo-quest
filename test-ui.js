@@ -8,7 +8,7 @@ const dir = __dirname;
 const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
 const FILES = ['storage', 'game/xp', 'game/categories', 'game/quests',
   'game/achievements', 'game/shop', 'game/regras', 'state', 'ui/icons',
-  'ui/notifications', 'ui/modals', 'ui/screens', 'app'];
+  'ui/notifications', 'ui/progress-card', 'ui/modals', 'ui/screens', 'app'];
 const code = FILES.map(f => fs.readFileSync(path.join(dir, 'js', f + '.js'), 'utf8'))
   .join('\n') + '\n;window.__LQ = { Game, Screens, Quests, Categories, Shop, Regras };';
 
@@ -209,6 +209,15 @@ function newApp(savedState = null) {
   assert(w.document.body.textContent.includes('ESTATÍSTICAS') &&
     w.document.body.textContent.includes('EQUIPAMENTO'),
     'seções ESTATÍSTICAS e EQUIPAMENTO presentes');
+
+  // compartilhar progresso: botão presente e falha graciosa sem canvas (jsdom)
+  const shareBtn = w.document.querySelector('[data-action="share-progress"]');
+  assert(!!shareBtn && shareBtn.textContent.includes('COMPARTILHAR PROGRESSO'),
+    'perfil tem o botão COMPARTILHAR PROGRESSO');
+  shareBtn.click();
+  await sleep(120);
+  assert(w.document.querySelector('[data-action="share-progress"]').disabled === false,
+    'geração de imagem falha graciosamente em ambiente sem Canvas');
 
   // editar personagem: nome, classe e avatar
   w.document.querySelector('[data-action="edit-char"]').click();

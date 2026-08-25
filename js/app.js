@@ -229,6 +229,14 @@ const App = {
       case 'edit-char':
         Modals.character(Game.state.player);
         break;
+      case 'share-progress': {
+        btn.disabled = true;
+        ProgressCard.share().then(ok => {
+          if (ok) Notify.toast('📸 PROGRESSO GERADO! Ficha pronta para compartilhar.', true);
+          else Notify.toast('Não foi possível gerar a imagem. Tente novamente.');
+        }).finally(() => { btn.disabled = false; });
+        break;
+      }
       case 'open-shop':
         Screens.navigate('shop');
         break;

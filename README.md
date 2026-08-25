@@ -99,6 +99,27 @@ Uma missão é uma **definição**, nunca duplicada no save. O sistema consulta 
 
 Cada conclusão gera uma entrada no histórico (`completions`), preservando quando foi feita, quanto valeu e permitindo futuras estatísticas.
 
+#### Reset diário (missões diárias)
+
+A disponibilidade **nunca** é armazenada na missão: é calculada na hora a partir do histórico. Para uma missão `Diária`:
+
+```text
+Missão existe
+    ↓
+Existe completion dessa missão na data de hoje?
+    ├── Sim → mostrar como concluída/bloqueada até amanhã
+    └── Não → mostrar como disponível/desmarcada
+```
+
+Consequências práticas:
+
+- Uma diária recém-criada começa **desmarcada**, mesmo que missões parecidas tenham sido concluídas em outros dias;
+- Concluída hoje, fica marcada **somente hoje** — recarregar a página não permite reconcluir nem gerar XP/Gold de novo;
+- No dia seguinte a mesma definição volta sozinha para **não concluída**, sem duplicar a missão nem criar instâncias;
+- Saves antigos continuam funcionando: nada é apagado ou recriado, apenas interpretado pelo período (`periodKey`).
+
+Se o app ficar aberto durante a virada do dia, um watcher leve (`App.watchDayRollover`) detecta a troca da data e re-renderiza a tela, para que as diárias voltem a aparecer disponíveis sem precisar recarregar.
+
 ### Categorias
 
 Nenhum atributo vem pronto: você cria os seus (Estudos, Leitura, Exercícios, Projetos...). Renomear ou trocar o ícone não afeta XP nem missões. Ao excluir uma categoria com missões vinculadas, o app pergunta o que fazer:
@@ -227,7 +248,9 @@ evoquest/
 │   └── ui/
 │       ├── screens.js      # renderização das telas
 │       ├── modals.js       # modais (missão, categoria, exclusão segura)
-│       └── notifications.js# toasts, overlays, animação das barras
+│       ├── notifications.js# toasts, overlays, animação das barras
+│       ├── icons.js        # catálogo e busca de ícones
+│       └── progress-card.js# geração da ficha de progresso (compartilhar)
 ├── test-core.js            # testes headless da lógica
 └── test-ui.js              # smoke test de interface (requer jsdom)
 ```

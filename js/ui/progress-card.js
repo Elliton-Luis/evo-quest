@@ -32,6 +32,7 @@ const ProgressCard = {
     const st = Game.stats();
     const p = Game.state.player;
 
+    // Só categorias com algum progresso; ordenadas por nível (mais relevantes primeiro).
     const categories = Categories.all()
       .map(c => {
         const prog = Xp.fromTotal(c.xp);
@@ -42,8 +43,8 @@ const ProgressCard = {
           pct: prog.needed > 0 ? Math.min(1, prog.current / prog.needed) : 0,
         };
       })
-      .sort((a, b) => b.level - a.level)
-      .slice(0, this.MAX_CATEGORIES);
+      .filter(c => c.level > 0 || c.pct > 0)
+      .sort((a, b) => b.level - a.level || b.pct - a.pct);
 
     // Maior streak entre as regrinhas (linha oculta se não houver).
     let streak = null;
@@ -171,14 +172,14 @@ const ProgressCard = {
     /* Classe */
     ctx.font = '44px "Press Start 2P", monospace';
     ctx.fillStyle = C.gold;
-    ctx.fillText(this._fit(ctx, d.klass, W - 260), cx, y + 220);
+    ctx.fillText(this._fit(ctx, d.klass, W - 260), cx, y + 210);
 
     /* Nível geral */
     ctx.font = '34px "Press Start 2P", monospace';
     ctx.fillStyle = C.text;
-    ctx.fillText(`NÍVEL ${d.level}`, cx, y + 320);
+    ctx.fillText(`NÍVEL ${d.level}`, cx, y + 300);
 
-    /* Estatísticas principais */
+    /* Estatísticas principais — grade 2×N compacta para caber sempre */
     const stats = [
       [`⭐`, `${this._fmt(d.totalXp)} XP`],
       [`⚔️`, `${this._fmt(d.questsDone)} MISSÕES`],
@@ -187,20 +188,25 @@ const ProgressCard = {
     if (d.gold > 0) stats.splice(1, 0, [`🪙`, `${this._fmt(d.gold)} GOLD`]);
     if (d.streak) stats.push([`🔥`, `${this._fmt(d.streak.value)} ${d.streak.unit.toUpperCase()}`]);
 
-    let sy = y + 470;
-    for (const [icon, label] of stats) {
-      ctx.font = '46px sans-serif';
-      ctx.fillText(icon, cx - 190, sy);
-      ctx.font = '32px "Press Start 2P", monospace';
+    const COL_X = [cx - 380, cx + 40];
+    const COL_TEXT_W = 330;
+    const ROW_STEP = 96;
+    const gridTop = y + 430;
+    ctx.textAlign = 'left';
+    stats.forEach(([icon, label], i) => {
+      const gx = COL_X[i % 2];
+      const gy = gridTop + Math.floor(i / 2) * ROW_STEP;
+      ctx.font = '44px sans-serif';
+      ctx.fillStyle = C.text;
+      ctx.fillText(icon, gx, gy);
+      ctx.font = '24px "Press Start 2P", monospace';
       ctx.fillStyle = C.dim;
-      ctx.textAlign = 'left';
-      ctx.fillText(label, cx - 130, sy);
-      ctx.textAlign = 'center';
-      sy += 104;
-    }
+      ctx.fillText(this._fit(ctx, label, COL_TEXT_W), gx + 62, gy);
+    });
 
     /* Divisor tracejado */
-    sy += 24;
+    const nStatRows = Math.ceil(stats.length / 2);
+    let sy = gridTop + (nStatRows - 1) * ROW_STEP + 56;
     ctx.strokeStyle = C.border;
     ctx.lineWidth = 3;
     ctx.setLineDash([18, 14]);
@@ -209,33 +215,46 @@ const ProgressCard = {
     ctx.lineTo(cx + 330, sy);
     ctx.stroke();
     ctx.setLineDash([]);
-    sy += 70;
+    sy += 66;
 
-    /* Categorias (principais) */
+    /* Categorias: apenas as mais relevantes (maior nível) e somente as que
+       couberem no espaço restante — o layout nunca transborda o painel,
+       independente de quantas categorias existam. */
     ctx.textBaseline = 'alphabetic';
-    for (const cat of d.categories) {
+    ctx.font = '22px "Press Start 2P", monospace';
+    ctx.fillStyle = C.dim;
+    ctx.fillText('CATEGORIAS', cx - 360, sy + 8);
+
+    const CAT_BOTTOM = H - 270; // reserva para a marca
+    const CAT_ROW_H = 112;
+    const rowsTop = sy + 56;
+    const maxRows = Math.max(0, Math.floor((CAT_BOTTOM - rowsTop) / CAT_ROW_H));
+    const shown = d.categories.slice(0, Math.min(this.MAX_CATEGORIES, maxRows));
+
+    for (let i = 0; i < shown.length; i++) {
+      const cat = shown[i];
+      const ry = rowsTop + i * CAT_ROW_H;
+
       ctx.textAlign = 'left';
       ctx.font = '52px "VT323", monospace';
       ctx.fillStyle = C.text;
       const name = this._fit(ctx, `${cat.icon} ${cat.name}`, 560);
-      ctx.fillText(name, cx - 360, sy);
+      ctx.fillText(name, cx - 360, ry + 38);
 
       ctx.textAlign = 'right';
       ctx.font = '26px "Press Start 2P", monospace';
       ctx.fillStyle = C.blue;
-      ctx.fillText(`Lv.${cat.level}`, cx + 360, sy);
+      ctx.fillText(`Lv.${cat.level}`, cx + 360, ry + 38);
 
       // barra de progresso fina
-      const bx = cx - 360, bw = 720, by = sy + 22;
+      const bx = cx - 360, bw = 720, by = ry + 58;
       ctx.fillStyle = '#101018';
       ctx.strokeStyle = C.borderLight;
       ctx.lineWidth = 3;
       ctx.fillRect(bx, by, bw, 22);
       ctx.strokeRect(bx, by, bw, 22);
       ctx.fillStyle = C.green;
-      ctx.fillRect(bx + 4, by + 4, Math.max(0, (bw - 8) * cat.pct), 14);
-
-      sy += 118;
+      ctx.fillRect(bx + 4, by + 4, Math.max(0, Math.min(bw - 8, (bw - 8) * cat.pct)), 14);
     }
 
     /* Marca */

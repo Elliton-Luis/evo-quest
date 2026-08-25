@@ -232,7 +232,7 @@ const ProgressCard = {
     ctx.fillStyle = C.dim;
     ctx.fillText('CATEGORIAS', cx - 360, sy + 8);
 
-    const CAT_BOTTOM = H - 270; // reserva para a marca
+    const CAT_BOTTOM = H - 170; // margem de segurança até o fim do painel
     const CAT_ROW_H = 112;
     const rowsTop = sy + 56;
     const maxRows = Math.max(0, Math.floor((CAT_BOTTOM - rowsTop) / CAT_ROW_H));
@@ -263,12 +263,6 @@ const ProgressCard = {
       ctx.fillStyle = C.green;
       ctx.fillRect(bx + 4, by + 4, Math.max(0, Math.min(bw - 8, (bw - 8) * cat.pct)), 14);
     }
-
-    /* Marca */
-    ctx.textAlign = 'center';
-    ctx.font = '26px "Press Start 2P", monospace';
-    ctx.fillStyle = C.gold;
-    ctx.fillText('L I F E Q U E S T', cx, H - 200);
 
     /* Scanlines sutis sobre tudo */
     ctx.fillStyle = 'rgba(255,255,255,.02)';

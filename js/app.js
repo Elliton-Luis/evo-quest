@@ -9,6 +9,7 @@ const App = {
   init() {
     if (this._initialized) return; // protege contra disparos duplicados
     this._initialized = true;
+    if (typeof PWA !== 'undefined') PWA.init();
 
     document.addEventListener('click', e => this.handleClick(e));
     document.addEventListener('submit', e => this.handleSubmit(e));

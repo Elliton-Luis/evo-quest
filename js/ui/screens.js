@@ -14,6 +14,7 @@ const Screens = {
     { id: 'attrs',  icon: '📊', label: 'Atributos' },
     { id: 'achv',   icon: '🏆', label: 'Conquistas' },
     { id: 'char',   icon: '👤', label: 'Personagem' },
+    { id: 'help',   icon: '❓', label: 'Ajuda' },
   ],
 
   /* ---------- helpers ---------- */
@@ -80,6 +81,7 @@ const Screens = {
         case 'shop':     this.shop(); break;
         case 'inventory': this.inventory(); break;
         case 'regras':   this.regras(); break;
+        case 'help':     this.help(); break;
       }
     } catch (e) {
       // Nunca deixar a aba "morta": exibe o erro em vez de tela vazia.

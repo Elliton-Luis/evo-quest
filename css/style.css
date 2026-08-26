@@ -864,9 +864,13 @@ select { appearance: none; }
   color: var(--red);
 }
 
-/* Nav com 6 abas: mantém toque confortável em 320px */
+/* Nav com 7 abas: mantém toque confortável em 320px */
 @media (max-width: 767px) {
-  .nav-btn { font-size: 13.5px; }
+  .nav-btn { font-size: 11.5px; padding: 6px 1px 4px; }
+  .nav-btn span { font-size: 19px; }
+}
+@media (max-width: 360px) {
+  #nav-mobile .nav-btn { font-size: 10.5px; }
 }
 
 /* ============ Seletor de ícones (6ª etapa) ============ */

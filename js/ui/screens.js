@@ -477,10 +477,7 @@ Object.assign(Screens, {
 
       <div class="panel">
         <div class="panel-title">EQUIPAMENTO</div>
-        ${equipRow('head', 'Cabeça')}
-        ${equipRow('body', 'Corpo')}
-        ${equipRow('accessory', 'Acessório')}
-        ${equipRow('background', 'Fundo')}
+        ${equipRow('avatar', 'Avatar')}
       </div>
 
       <div style="display:flex; flex-direction:column; gap:8px">
@@ -505,13 +502,8 @@ Object.assign(Screens, {
 
   shopTab: 'avatar',
 
-  SHOP_TABS: [
-    ['avatar', 'AVATARES'], ['head', 'CABEÇA'], ['body', 'CORPO'],
-    ['accessory', 'ACESSÓRIOS'], ['background', 'FUNDOS'],
-  ],
-
   shop() {
-    const items = Shop.items(this.shopTab);
+    const items = Shop.items('avatar');
     const gold = Shop.gold();
 
     const cards = items.map(item => {
@@ -552,13 +544,7 @@ Object.assign(Screens, {
     this.el('#screen').innerHTML = `
       <div class="panel summary-grid" style="align-items:center">
         <div><div class="hero-sub">Gold</div><div class="stat-big">🪙 ${this.fmt(gold)}</div></div>
-        <div class="hero-sub" style="flex:2; text-align:right">Tudo aqui é<br>cosmético — só estilo.</div>
-      </div>
-
-      <div class="tabs">
-        ${this.SHOP_TABS.map(([id, label]) =>
-          `<button class="tab ${this.shopTab === id ? 'active' : ''}"
-                   data-action="shop-tab" data-type="${id}">${label}</button>`).join('')}
+        <div class="hero-sub" style="flex:2; text-align:right">Avatares disponíveis<br>— tudo cosmético.</div>
       </div>
 
       <div class="shop-grid">${cards}</div>
@@ -575,9 +561,7 @@ Object.assign(Screens, {
 
     const rows = owned.map(item => {
       const equipped = Shop.equippedIn(item.type)?.id === item.id;
-      const slotLabel =
-        { avatar: 'Avatar', head: 'Cabeça', body: 'Corpo',
-          accessory: 'Acessório', background: 'Fundo' }[item.type] || item.type;
+      const slotLabel = 'Avatar';
       return `
         <div class="quest-item">
           <div class="attr-icon">${item.icon}</div>

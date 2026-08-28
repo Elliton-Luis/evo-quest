@@ -24,57 +24,59 @@ const BASIC_AVATARS = [
   { id: 'sword',      icon: '⚔️' },
 ];
 
-const SLOTS = ['avatar', 'head', 'body', 'accessory', 'background'];
+const SLOTS = ['avatar'];
 
 /* price null → item desbloqueado por conquista (unlockAchievement). */
 const SHOP_ITEMS = [
-  /* Avatares */
-  { id: 'av-wizard',   name: 'Arquimago',    type: 'avatar', icon: '🧙‍♂️', price: 100,  rarity: 'rare' },
-  { id: 'av-fencer',   name: 'Esgrimista',   type: 'avatar', icon: '🤺',   price: 150,  rarity: 'rare' },
-  { id: 'av-vampire',  name: 'Vampiro',      type: 'avatar', icon: '🧛',   price: 250,  rarity: 'epic' },
-  { id: 'av-unicorn',  name: 'Unicórnio',    type: 'avatar', icon: '🦄',   price: 300,  rarity: 'epic' },
-  { id: 'av-wolf',     name: 'Lobisomem',    type: 'avatar', icon: '🐺',   price: 300,  rarity: 'epic' },
-  { id: 'av-alien',    name: 'Alienígena',   type: 'avatar', icon: '👽',   price: 500,  rarity: 'epic' },
-  { id: 'av-phoenix',  name: 'Fênix',        type: 'avatar', icon: '🔥',   price: 600,  rarity: 'epic' },
-  { id: 'av-ghost',    name: 'Espectro',     type: 'avatar', icon: '👻',   price: 600,  rarity: 'epic' },
-  { id: 'av-genie',    name: 'Gênio',        type: 'avatar', icon: '🧞',   price: 700,  rarity: 'epic' },
-  { id: 'av-zombie',   name: 'Zumbi',        type: 'avatar', icon: '🧟',   price: 700,  rarity: 'epic' },
-  { id: 'av-goblin',   name: 'Duende',       type: 'avatar', icon: '👺',   price: 750,  rarity: 'epic' },
-  { id: 'av-skull',    name: 'Caveira Mística', type: 'avatar', icon: '💀', price: 800, rarity: 'epic' },
-  { id: 'av-dragon',   name: 'Dragão',       type: 'avatar', icon: '🐉',   price: 1000, rarity: 'legendary' },
-  { id: 'av-dragonface', name: 'Dragão Ancião', type: 'avatar', icon: '🐲', price: 1100, rarity: 'legendary' },
-  { id: 'av-medusa',   name: 'Medusa',       type: 'avatar', icon: '🐍',   price: 1200, rarity: 'legendary' },
-  { id: 'av-demon',    name: 'Demônio',      type: 'avatar', icon: '👹',   price: 1300, rarity: 'legendary' },
-  { id: 'av-ogre',     name: 'Ogro',         type: 'avatar', icon: '🧌',   price: 1400, rarity: 'legendary' },
+  /* Avatares humanos */
+  { id: 'av-wizard',    name: 'Arquimago',      type: 'avatar', icon: '🧙‍♂️', price: 100,  rarity: 'rare' },
+  { id: 'av-fencer',    name: 'Esgrimista',     type: 'avatar', icon: '🤺',   price: 150,  rarity: 'rare' },
+  { id: 'av-knight',    name: 'Cavaleiro',      type: 'avatar', icon: '🛡️',   price: 120,  rarity: 'rare' },
+  { id: 'av-ninja',     name: 'Ninja',          type: 'avatar', icon: '🥷',   price: 180,  rarity: 'rare' },
+  { id: 'av-viking',    name: 'Viking',         type: 'avatar', icon: '🪓',   price: 180,  rarity: 'rare' },
+  { id: 'av-superhero', name: 'Super-Herói',    type: 'avatar', icon: '🦸',   price: 300,  rarity: 'epic' },
+  { id: 'av-supervillain', name: 'Vilão',       type: 'avatar', icon: '🦹',   price: 300,  rarity: 'epic' },
+  { id: 'av-king',      name: 'Rei',            type: 'avatar', icon: '🤴',   price: 350,  rarity: 'epic' },
+  { id: 'av-queen',     name: 'Rainha',         type: 'avatar', icon: '👸',   price: 350,  rarity: 'epic' },
+  { id: 'av-princess',  name: 'Princesa',       type: 'avatar', icon: '👸🏽',  price: 350,  rarity: 'epic' },
 
-  /* Cabeça */
-  { id: 'cap',         name: 'Boné',          type: 'head', icon: '🧢', price: 50,  rarity: 'common' },
-  { id: 'top-hat',     name: 'Cartola',       type: 'head', icon: '🎩', price: 100, rarity: 'uncommon' },
-  { id: 'helmet',      name: 'Elmo de Batalha', type: 'head', icon: '🪖', price: 250, rarity: 'rare' },
-  { id: 'crown',       name: 'Coroa Real',    type: 'head', icon: '👑', price: 500, rarity: 'epic' },
+  /* Avatares fantásticos */
+  { id: 'av-vampire',   name: 'Vampiro',        type: 'avatar', icon: '🧛',   price: 250,  rarity: 'epic' },
+  { id: 'av-zombie',    name: 'Zumbi',          type: 'avatar', icon: '🧟',   price: 700,  rarity: 'epic' },
+  { id: 'av-genie',     name: 'Gênio',          type: 'avatar', icon: '🧞',   price: 700,  rarity: 'epic' },
+  { id: 'av-fairy',     name: 'Fada',           type: 'avatar', icon: '🧚',   price: 750,  rarity: 'epic' },
+  { id: 'av-goblin',    name: 'Duende',         type: 'avatar', icon: '👺',   price: 750,  rarity: 'epic' },
+  { id: 'av-ogre',      name: 'Ogro',           type: 'avatar', icon: '🧌',   price: 1400, rarity: 'legendary' },
+  { id: 'av-demon',     name: 'Demônio',        type: 'avatar', icon: '👹',   price: 1300, rarity: 'legendary' },
+  { id: 'av-gargoyle',  name: 'Gárgula',        type: 'avatar', icon: '👿',   price: 1200, rarity: 'legendary' },
+  { id: 'av-angel',     name: 'Anjo',           type: 'avatar', icon: '😇',   price: 900,  rarity: 'legendary' },
 
-  /* Corpo */
-  { id: 'tshirt',      name: 'Camiseta',      type: 'body', icon: '👕', price: 50,  rarity: 'common' },
-  { id: 'coat',        name: 'Sobretudo',     type: 'body', icon: '🧥', price: 150, rarity: 'uncommon' },
-  { id: 'dress',       name: 'Vestido Real',  type: 'body', icon: '👗', price: 250, rarity: 'rare' },
-  { id: 'hero-cape',   name: 'Capa Lendária', type: 'body', icon: '🦸', price: 1000, rarity: 'legendary' },
+  /* Avatares místicos */
+  { id: 'av-skull',     name: 'Caveira Mística', type: 'avatar', icon: '💀', price: 800, rarity: 'epic' },
+  { id: 'av-ghost',     name: 'Espectro',       type: 'avatar', icon: '👻',   price: 600,  rarity: 'epic' },
+  { id: 'av-alien',     name: 'Alienígena',     type: 'avatar', icon: '👽',   price: 500,  rarity: 'epic' },
+  { id: 'av-robot',     name: 'Robô',           type: 'avatar', icon: '🤖',   price: 550,  rarity: 'epic' },
+  { id: 'av-medusa',    name: 'Medusa',         type: 'avatar', icon: '🐍',   price: 1200, rarity: 'legendary' },
+  { id: 'av-cyclops',   name: 'Ciclope',        type: 'avatar', icon: '👁️',   price: 950,  rarity: 'legendary' },
 
-  /* Acessórios */
-  { id: 'glasses',     name: 'Óculos',        type: 'accessory', icon: '👓', price: 50,  rarity: 'common' },
-  { id: 'backpack',    name: 'Mochila',       type: 'accessory', icon: '🎒', price: 100, rarity: 'uncommon' },
-  { id: 'scarf',       name: 'Cachecol',      type: 'accessory', icon: '🧣', price: 150, rarity: 'uncommon' },
-  { id: 'wand',        name: 'Varinha Mágica', type: 'accessory', icon: '🪄', price: 500, rarity: 'epic' },
-  {
-    id: 'gold-trophy', name: 'Troféu de Ouro', type: 'accessory', icon: '🏆',
-    price: null, rarity: 'legendary', unlockAchievement: 'hero',
-    unlockDesc: 'Complete 100 missões.',
-  },
+  /* Avatares animais */
+  { id: 'av-wolf',      name: 'Lobisomem',      type: 'avatar', icon: '🐺',   price: 300,  rarity: 'epic' },
+  { id: 'av-tiger',     name: 'Tigre',          type: 'avatar', icon: '🐯',   price: 300,  rarity: 'epic' },
+  { id: 'av-lion',      name: 'Leão',           type: 'avatar', icon: '🦁',   price: 320,  rarity: 'epic' },
+  { id: 'av-panda',     name: 'Panda',          type: 'avatar', icon: '🐼',   price: 280,  rarity: 'rare' },
+  { id: 'av-unicorn',   name: 'Unicórnio',      type: 'avatar', icon: '🦄',   price: 300,  rarity: 'epic' },
+  { id: 'av-whale',     name: 'Baleia',         type: 'avatar', icon: '🐋',   price: 500,  rarity: 'epic' },
+  { id: 'av-dino',      name: 'Dinossauro',     type: 'avatar', icon: '🦖',   price: 600,  rarity: 'epic' },
+  { id: 'av-octopus',   name: 'Polvo',          type: 'avatar', icon: '🐙',   price: 550,  rarity: 'epic' },
+  { id: 'av-fox',       name: 'Raposa',         type: 'avatar', icon: '🦊',   price: 250,  rarity: 'rare' },
+  { id: 'av-frog',      name: 'Sapo',           type: 'avatar', icon: '🐸',   price: 200,  rarity: 'rare' },
 
-  /* Fundos */
-  { id: 'bg-forest',   name: 'Floresta',      type: 'background', icon: '🌲', price: 100, rarity: 'uncommon' },
-  { id: 'bg-castle',   name: 'Castelo',       type: 'background', icon: '🏰', price: 250, rarity: 'rare' },
-  { id: 'bg-night',    name: 'Céu Noturno',   type: 'background', icon: '🌌', price: 500, rarity: 'epic' },
-  { id: 'bg-volcano',  name: ' Vulcão',       type: 'background', icon: '🌋', price: 1000, rarity: 'legendary' },
+  /* Avatares lendários */
+  { id: 'av-dragon',      name: 'Dragão',       type: 'avatar', icon: '🐉',   price: 1000, rarity: 'legendary' },
+  { id: 'av-dragonface',  name: 'Dragão Ancião', type: 'avatar', icon: '🐲', price: 1100, rarity: 'legendary' },
+  { id: 'av-phoenix',     name: 'Fênix',        type: 'avatar', icon: '🔥',   price: 600,  rarity: 'legendary' },
+  { id: 'av-kaiju',       name: 'Kaiju',        type: 'avatar', icon: '🦕',   price: 900,  rarity: 'legendary' },
+  { id: 'av-godzilla',    name: 'Colosso',      type: 'avatar', icon: '🦖💥', price: 1500, rarity: 'legendary' },
 ];
 
 const Shop = {

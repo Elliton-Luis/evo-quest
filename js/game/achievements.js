@@ -10,6 +10,12 @@ const Cond = {
   totalXp: n => s => s.player.totalXp >= n,
   quests: n => s => s.quests.length >= n,
   cats: n => s => s.categories.length >= n,
+  gold: n => s => (s.wallet?.gold || 0) >= n,
+  quiver: n => s => s.quests.filter(q => {
+    const last = Quests.lastCompletion(q.id);
+    return last && q.recurrence === 'once';
+  }).length >= n,
+  streak: n => s => s.quests.some(q => (q.streak || 0) >= n),
   catsAtLevel(level, count) {
     return s =>
       s.categories.filter(c => Xp.fromTotal(c.xp).level >= level).length >= count;

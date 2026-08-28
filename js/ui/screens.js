@@ -280,13 +280,13 @@ Object.assign(Screens, {
     }
 
     this.el('#screen').innerHTML = `
+      <button class="btn btn-primary btn-block" data-action="new-quest">+ NOVA MISSÃO</button>
       <div class="tabs">
         ${FILTERS.map(([id, label]) =>
           `<button class="tab ${this.questFilter === id ? 'active' : ''}"
                    data-action="filter" data-filter="${id}">${label}</button>`).join('')}
       </div>
-      ${content}
-      <button class="btn btn-primary btn-block" data-action="new-quest">+ NOVA MISSÃO</button>`;
+      ${content}`;
   },
 
   historyList() {

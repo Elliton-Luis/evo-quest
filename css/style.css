@@ -68,6 +68,19 @@ h1, h2, h3, .pixel {
 
 #nav-desktop { display: none; }
 
+.help-btn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 16px;
+  padding: 6px 8px;
+  cursor: pointer;
+  opacity: .7;
+  transition: opacity .15s, color .15s;
+}
+.help-btn:hover { opacity: 1; color: var(--text); }
+
 #screen {
   max-width: 720px;
   margin: 0 auto;
@@ -337,7 +350,7 @@ h1, h2, h3, .pixel {
 .btn-primary { color: var(--gold); border-color: var(--gold); }
 .btn-success { color: var(--green); border-color: var(--green); }
 .btn-danger  { color: var(--red);  border-color: var(--red); }
-.btn-block   { display: block; width: 100%; }
+.btn-block   { display: block; width: 100%; margin-bottom: 12px; }
 
 .icon-btn {
   font-family: var(--font-body);

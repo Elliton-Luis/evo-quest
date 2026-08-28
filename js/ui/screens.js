@@ -14,7 +14,6 @@ const Screens = {
     { id: 'attrs',  icon: '📊', label: 'Atributos' },
     { id: 'achv',   icon: '🏆', label: 'Conquistas' },
     { id: 'char',   icon: '👤', label: 'Personagem' },
-    { id: 'help',   icon: '❓', label: 'Ajuda' },
   ],
 
   /* ---------- helpers ---------- */

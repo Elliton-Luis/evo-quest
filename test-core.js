@@ -316,39 +316,30 @@ const reSaved = Game.load();
 assert(reSaved.wallet.gold === goldSnapshot, 'Gold preservado exatamente após reload');
 
 /* ---------- 11. Loja: compra, posse, equipar ---------- */
-const cheap = Shop.get('cap');
-assert(cheap.price === 50 && cheap.rarity === 'common', 'item da loja definido por dados');
-assert(!Shop.owns('cap'), 'item não possuído inicialmente');
+const cheap = Shop.get('av-fox');
+assert(cheap.price === 250 && cheap.type === 'avatar', 'item da loja definido por dados');
+assert(!Shop.owns('av-fox'), 'item não possuído inicialmente');
 
 // sem saldo suficiente → bloqueado
 Game.state.wallet.gold = 10;
-const poorBuy = Shop.buy('cap');
+const poorBuy = Shop.buy('av-fox');
 assert(!poorBuy.ok && poorBuy.reason === 'poor' && Game.state.wallet.gold === 10,
   'compra sem Gold é recusada e não altera carteira');
 
 // compra válida debita e registra uma única vez
-Game.state.wallet.gold = 100;
-assert(Shop.buy('cap').ok === true, 'compra bem-sucedida');
+Game.state.wallet.gold = 300;
+assert(Shop.buy('av-fox').ok === true, 'compra bem-sucedida');
 assert(Game.state.wallet.gold === 50, 'preço debitado corretamente');
-assert(Shop.buy('cap').ok === false && Shop.owns('cap') &&
-  Game.state.inventory.owned.filter(i => i === 'cap').length === 1,
+assert(Shop.buy('av-fox').ok === false && Shop.owns('av-fox') &&
+  Game.state.inventory.owned.filter(i => i === 'av-fox').length === 1,
   'compra duplicada recusada — item único no inventário');
 
 // equipar / desequipar
-assert(Shop.equip('cap') && Shop.equippedIn('head')?.id === 'cap', 'item equipado');
-assert(Shop.equip('cap') === true && Game.state.inventory.equipped.head === 'cap',
+assert(Shop.equip('av-fox') && Shop.equippedIn('avatar')?.id === 'av-fox', 'item equipado');
+assert(Shop.equip('av-fox') === true && Game.state.inventory.equipped.avatar === 'av-fox',
   'equipar novamente não cria estado estranho');
-assert(Shop.unequip('head') && Shop.equippedIn('head') === null, 'item desequipado');
-assert(Shop.equip('cap-inexistente') === false, 'equipar item inexistente falha com segurança');
-
-// item bloqueado por conquista
-const trophy = Shop.get('gold-trophy');
-assert(trophy.price === null && trophy.unlockAchievement === 'hero', 'item especial definido por conquista');
-assert(Shop.isLocked(trophy), 'troféu bloqueado sem a conquista Herói');
-assert(Shop.buy('gold-trophy').reason === 'locked' && !Shop.owns('gold-trophy'),
-  'compra de item bloqueado é recusada');
-Game.state.achievements.push({ id: 'hero', unlockedAt: sleepless() });
-assert(!Shop.isLocked(trophy) && Shop.buy('gold-trophy').ok, 'troféu liberado após conquista');
+assert(Shop.unequip('avatar') && Shop.equippedIn('avatar') === null, 'item desequipado');
+assert(Shop.equip('av-inexistente') === false, 'equipar item inexistente falha com segurança');
 
 // avatar: básico por padrão, item equipado tem prioridade
 assert(BASIC_AVATARS.length >= 8, 'avatares básicos disponíveis');

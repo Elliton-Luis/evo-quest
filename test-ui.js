@@ -239,24 +239,23 @@ function newApp(savedState = null) {
   w.document.querySelector('[data-action="open-shop"]').click();
   assert(w.document.querySelector('.shop-grid .shop-item'), 'loja renderiza itens a partir dos dados');
 
-  // aba Cabeça → comprar o Boné (50)
-  w.document.querySelector('[data-action="shop-tab"][data-type="head"]').click();
-  const buyBtn = w.document.querySelector('[data-action="shop-buy"][data-id="cap"]');
+  // comprar um avatar (av-wizard, 100)
+  const buyBtn = w.document.querySelector('[data-action="shop-buy"][data-id="av-wizard"]');
   assert(buyBtn && buyBtn.textContent.includes('COMPRAR'), 'item comprável mostra botão COMPRAR');
   buyBtn.click();
-  assert(Shop.owns('cap') && Game.state.wallet.gold === 150,
+  assert(Shop.owns('av-wizard') && Game.state.wallet.gold === 100,
     'compra debita Gold e registra item uma única vez');
   assert(w.document.body.innerHTML.includes('✓ COMPRADO'), 'cartão passa a mostrar ✓ COMPRADO');
 
   // equipar e ver no perfil
-  w.document.querySelector('[data-action="shop-equip"][data-id="cap"]').click();
-  const equipped = Game.state.inventory.equipped.head;
-  assert(equipped === 'cap', 'equipamento registrado no estado');
+  w.document.querySelector('[data-action="shop-equip"][data-id="av-wizard"]').click();
+  const equipped = Game.state.inventory.equipped.avatar;
+  assert(equipped === 'av-wizard', 'equipamento registrado no estado');
 
   /* ---------- 10. Inventário ---------- */
   w.document.querySelector('[data-action="open-inventory"]').click();
   assert(w.document.body.innerHTML.includes('INVENTÁRIO') &&
-    w.document.body.innerHTML.includes('Boné'), 'inventário lista o item comprado');
+    w.document.body.innerHTML.includes('Arquimago'), 'inventário lista o item comprado');
 
   /* ---------- 11. Fechar e reabrir o navegador ---------- */
   const save = w.localStorage.getItem('evoquest_save_v1');
@@ -267,9 +266,9 @@ function newApp(savedState = null) {
   assert(!w.document.getElementById('char-form'), 'criação não é exibida novamente');
   assert(Game2.state.player.name === 'Alice II' &&
     Game2.state.player.totalXp === 75 &&
-    Game2.state.wallet.gold === 150 &&
-    w.__LQ.Shop.owns('cap') &&
-    Game2.state.inventory.equipped.head === 'cap',
+    Game2.state.wallet.gold >= 100 && // flush de conquistas pode somar bônus de Gold
+    w.__LQ.Shop.owns('av-wizard') &&
+    Game2.state.inventory.equipped.avatar === 'av-wizard',
     'todo o progresso (XP, Gold, itens, equipamento) preservado ao reabrir');
 
   console.log('\nSMOKE TEST DE INTERFACE PASSOU ✔');

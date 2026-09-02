@@ -259,6 +259,26 @@ Object.assign(Screens, {
 
   /* ---------- tela de missões ---------- */
 
+  _questActiveFiltersCount() {
+    let n = 0;
+    if (this.questDifficulty !== 'all') n++;
+    if (this.questSort !== 'newest') n++;
+    return n;
+  },
+
+  _applyQuestFilters(list) {
+    let out = list;
+    if (this.questDifficulty !== 'all') {
+      out = out.filter(q => q.difficulty === this.questDifficulty);
+    }
+    const sort = this.questSort || 'newest';
+    if (sort === 'oldest') out = [...out].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+    else if (sort === 'newest') out = [...out].sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+    else if (sort === 'az') out = [...out].sort((a, b) => a.title.localeCompare(b.title, 'pt-BR'));
+    else if (sort === 'za') out = [...out].sort((a, b) => b.title.localeCompare(a.title, 'pt-BR'));
+    return out;
+  },
+
   quests() {
     const FILTERS = [
       ['all', 'TODAS'], ['pending', 'PENDENTES'],
@@ -269,16 +289,25 @@ Object.assign(Screens, {
     if (this.questFilter === 'history') {
       content = this.historyList();
     } else {
-      const all = [...Quests.all()].reverse();
-      const list = all.filter(q =>
+      const all = [...Quests.all()];
+      let list = all.filter(q =>
         this.questFilter === 'pending' ? Quests.isAvailable(q) :
         this.questFilter === 'done' ? !Quests.isAvailable(q) : true
       );
+      list = this._applyQuestFilters(list);
       content = `<div class="panel">${
         list.length ? list.map(q => this.questCard(q)).join('')
-                    : '<div class="empty-msg">Nenhuma missão aqui.</div>'
+                    : '<div class="empty-msg">Nenhuma missão encontrada com os filtros atuais.</div>'
       }</div>`;
     }
+
+    const activeCount = this._questActiveFiltersCount();
+    const filterLabel = activeCount ? `⚙ FILTROS • ${activeCount}` : '⚙ FILTROS';
+    const filterBtn = this.questFilter === 'history' ? '' : `
+      <div style="display:flex; gap:8px; margin-bottom:12px">
+        <button class="btn ${activeCount ? 'btn-primary' : ''} btn-block" data-action="quest-filter-open" style="margin:0">${filterLabel}</button>
+        ${activeCount ? `<button class="btn" data-action="quest-filter-clear" title="Limpar filtros" style="margin:0; flex:0 0 auto">✕</button>` : ''}
+      </div>`;
 
     this.el('#screen').innerHTML = `
       <button class="btn btn-primary btn-block" data-action="new-quest">+ NOVA MISSÃO</button>
@@ -287,6 +316,7 @@ Object.assign(Screens, {
           `<button class="tab ${this.questFilter === id ? 'active' : ''}"
                    data-action="filter" data-filter="${id}">${label}</button>`).join('')}
       </div>
+      ${filterBtn}
       ${content}`;
   },
 

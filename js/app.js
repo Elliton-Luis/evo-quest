@@ -122,6 +122,16 @@ const App = {
         Screens.questFilter = btn.dataset.filter;
         Screens.quests();
         break;
+      case 'quest-filter-open':
+        Modals.questFilters();
+        break;
+      case 'quest-filter-clear':
+        Screens.questDifficulty = 'all';
+        Screens.questSort = 'newest';
+        Modals.close();
+        Screens.quests();
+        Notify.toast('Filtros limpos');
+        break;
 
       /* categorias */
       case 'cat-new':
@@ -446,6 +456,18 @@ const App = {
       }
       Modals.close();
       Screens.refresh();
+      return;
+    }
+
+    /* filtros de missões (modal) */
+    if (form.id === 'quest-filter-form') {
+      e.preventDefault();
+      const diffEl = form.querySelector('input[name="qf-diff"]:checked');
+      const sortEl = form.querySelector('input[name="qf-sort"]:checked');
+      Screens.questDifficulty = diffEl ? diffEl.value : 'all';
+      Screens.questSort = sortEl ? sortEl.value : 'newest';
+      Modals.close();
+      Screens.quests();
       return;
     }
 

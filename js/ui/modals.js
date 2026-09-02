@@ -311,6 +311,60 @@ const Modals = {
 
 Object.assign(Modals, {
 
+  /* ---------- filtros de missões ---------- */
+
+  questFilters() {
+    const diffs = [
+      ['all', 'Todas'],
+      ['easy', 'Fácil'],
+      ['normal', 'Normal'],
+      ['hard', 'Difícil'],
+      ['epic', 'Épica'],
+      ['custom', 'Personalizada'],
+    ];
+    const sorts = [
+      ['newest', 'Mais recentes'],
+      ['oldest', 'Mais antigas'],
+      ['az', 'A → Z'],
+      ['za', 'Z → A'],
+    ];
+    const curDiff = Screens.questDifficulty || 'all';
+    const curSort = Screens.questSort || 'newest';
+
+    const diffPills = diffs.map(([id, label]) => `
+      <label>
+        <input type="radio" name="qf-diff" value="${id}" ${curDiff === id ? 'checked' : ''}>
+        <span class="choice-pill">${this.esc(label)}</span>
+      </label>`).join('');
+
+    const sortPills = sorts.map(([id, label]) => `
+      <label>
+        <input type="radio" name="qf-sort" value="${id}" ${curSort === id ? 'checked' : ''}>
+        <span class="choice-pill">${this.esc(label)}</span>
+      </label>`).join('');
+
+    this.open(`
+      <div class="modal-title">FILTROS — MISSÕES</div>
+      <form id="quest-filter-form">
+        <div class="field">
+          <label>DIFICULDADE</label>
+          <div class="choice-group">${diffPills}</div>
+        </div>
+        <div class="field">
+          <label>ORDENAÇÃO</label>
+          <div class="choice-group">${sortPills}</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" data-action="quest-filter-clear">LIMPAR</button>
+          <button type="button" class="btn" data-action="modal-cancel">CANCELAR</button>
+          <button type="submit" class="btn btn-primary">APLICAR</button>
+        </div>
+      </form>`);
+  },
+});
+
+Object.assign(Modals, {
+
   /* ---------- regrinha (criar/editar) ---------- */
 
   regra(regra = null) {

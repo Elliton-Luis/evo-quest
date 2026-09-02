@@ -6,6 +6,8 @@
 const Screens = {
   currentScreen: 'home',
   questFilter: 'all',
+  questDifficulty: 'all',
+  questSort: 'newest',
 
   NAV_ITEMS: [
     { id: 'home',   icon: '🏠', label: 'Início' },

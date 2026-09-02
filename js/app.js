@@ -32,6 +32,7 @@ const App = {
       // Save antigo sem nenhuma categoria? Convida a criar na tela de boas-vindas.
       Screens.navigate(Game.state.categories.length === 0 && !Game.state.completions.length
         ? 'welcome' : 'home');
+      if (typeof Backup !== 'undefined') Backup.init();
       this.flushAchievements();
       this.watchDayRollover();
       // Verifica regrinhas quebradas enquanto o app esteve fechado.
@@ -39,6 +40,10 @@ const App = {
       if (breaks.length) {
         const total = breaks.reduce((s, b) => s + b.penalty, 0);
         Notify.toast(`❌ ${breaks.length} regrinha(s) quebrada(s) · -${total} 🪙`);
+      }
+      // Avisa se houver backup pendente após auto-verificação
+      if (typeof Backup !== 'undefined' && Backup.isPending()) {
+        setTimeout(() => Notify.toast('⚠ Backup pendente — exporte seu progresso'), 1200);
       }
     } else {
       Screens.navigate('creation');
@@ -236,6 +241,8 @@ const App = {
           Screens.refresh();
         } else if (kind === 'reset') {
           Game.reset();
+          try { localStorage.removeItem('evoquest_backup_meta'); localStorage.removeItem('evoquest_backup_json'); } catch (e) {}
+          if (typeof Backup !== 'undefined') Backup._fileHandle = null;
           Screens.navigate('creation');
         }
         break;
@@ -269,11 +276,41 @@ const App = {
           'reset'
         );
         break;
+
+      /* backup */
+      case 'backup-export':
+        if (typeof Backup !== 'undefined') Backup.exportManual();
+        break;
+      case 'backup-import':
+        document.getElementById('backup-file-input')?.click();
+        break;
+      case 'backup-import-cancel':
+        if (typeof Backup !== 'undefined') Backup._pendingImport = null;
+        Modals.close();
+        break;
+      case 'backup-export-before': {
+        const pending = Backup._pendingImport;
+        if (pending) {
+          const p = Backup.exportManual();
+          if (p && p.then) p.then(() => Notify.toast('Backup atual exportado — confirme a importação novamente'));
+          else Notify.toast('Backup atual exportado — confirme a importação novamente');
+        }
+        break;
+      }
+      case 'backup-import-confirm':
+        if (typeof Backup !== 'undefined') Backup.confirmImportApply();
+        break;
     }
   },
 
   handleChange(e) {
     const t = e.target;
+
+    if (t.id === 'backup-file-input' && t.files && t.files[0]) {
+      if (typeof Backup !== 'undefined') Backup.importFromFile(t.files[0]);
+      t.value = '';
+      return;
+    }
 
     // Classe "✨ Personalizado" revela o campo de texto
     if (t.id === 'char-class') {
@@ -319,6 +356,12 @@ const App = {
       }
       if (!name) return;
       Game.createPlayer(name, klass, isCustom);
+      if (typeof Backup !== 'undefined') {
+        // novo jogo -> backup pendente
+        try { localStorage.removeItem('evoquest_backup_meta'); localStorage.removeItem('evoquest_backup_json'); } catch (e) {}
+        Backup.init();
+        Backup.markDirty();
+      }
       Screens.navigate('welcome'); // 0 categorias: convida a criar atributos
       return;
     }

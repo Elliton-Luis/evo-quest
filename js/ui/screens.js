@@ -488,6 +488,18 @@ Object.assign(Screens, {
       </div>
 
       <div class="panel" style="margin-top:16px">
+        <div class="panel-title">DADOS</div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <button class="btn btn-primary btn-block" data-action="backup-export">📦 EXPORTAR BACKUP</button>
+          <button class="btn btn-block" data-action="backup-import">📥 IMPORTAR BACKUP</button>
+          <input type="file" id="backup-file-input" accept=".json,application/json" class="hidden">
+        </div>
+        <div class="stats-line" style="margin-top:12px"><span>Último backup</span><b id="backup-last">${typeof Backup !== 'undefined' ? Backup.formatLastBackup() : '—'}</b></div>
+        <div class="stats-line"><span>Status</span><b id="backup-status" class="${typeof Backup !== 'undefined' && Backup.isPending() ? 'quest-broken' : 'quest-status'}">${typeof Backup !== 'undefined' ? Backup.statusText() : '—'}</b></div>
+        <p class="hero-sub" style="font-size:15px; margin-top:8px">O backup é um snapshot completo. Guarde o arquivo em local seguro.</p>
+      </div>
+
+      <div class="panel" style="margin-top:16px">
         <p class="hero-sub" style="margin-bottom:10px; font-size:16px">
           Reiniciar apaga TODO o progresso salvo neste navegador.
         </p>
